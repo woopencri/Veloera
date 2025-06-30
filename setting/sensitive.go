@@ -8,6 +8,9 @@ import (
 var CheckSensitiveEnabled = true
 var CheckSensitiveOnPromptEnabled = true
 
+var SafeCheckExemptEnabled = false
+var SafeCheckExemptGroup = "nsfw-ok"
+
 //var CheckSensitiveOnCompletionEnabled = true
 
 // StopOnSensitiveEnabled 如果检测到敏感词，是否立刻停止生成，否则替换敏感词
@@ -74,6 +77,13 @@ func SensitiveWordsFromString(s string) {
 
 func ShouldCheckPromptSensitive() bool {
 	return CheckSensitiveEnabled && CheckSensitiveOnPromptEnabled
+}
+
+func ShouldCheckPromptSensitiveWithGroup(group string) bool {
+	if SafeCheckExemptEnabled && group == SafeCheckExemptGroup {
+		return false
+	}
+	return ShouldCheckPromptSensitive()
 }
 
 //func ShouldCheckCompletionSensitive() bool {

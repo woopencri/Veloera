@@ -91,7 +91,8 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		return service.OpenAIErrorWrapperLocal(err, "invalid_text_request", http.StatusBadRequest)
 	}
 
-	if setting.ShouldCheckPromptSensitive() {
+	tokenGroup := c.GetString("token_group")
+	if setting.ShouldCheckPromptSensitiveWithGroup(tokenGroup) {
 		words, err := checkRequestSensitive(textRequest, relayInfo)
 		if err != nil {
 			common.LogWarn(c, fmt.Sprintf("user sensitive words detected: %s", strings.Join(words, ", ")))

@@ -100,7 +100,8 @@ func validateAndPrepareRequest(c *gin.Context, relayInfo *relaycommon.RelayInfo)
 		return nil, service.OpenAIErrorWrapperLocal(err, "invalid_responses_request", http.StatusBadRequest)
 	}
 
-	if setting.ShouldCheckPromptSensitive() {
+	tokenGroup := c.GetString("token_group")
+	if setting.ShouldCheckPromptSensitiveWithGroup(tokenGroup) {
 		sensitiveWords, err := checkInputSensitive(req, relayInfo)
 		if err != nil {
 			common.LogWarn(c, fmt.Sprintf("user sensitive words detected: %s", strings.Join(sensitiveWords, ", ")))

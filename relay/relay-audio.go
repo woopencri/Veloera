@@ -26,7 +26,8 @@ func getAndValidAudioRequest(c *gin.Context, info *relaycommon.RelayInfo) (*dto.
 		if audioRequest.Model == "" {
 			return nil, errors.New("model is required")
 		}
-		if setting.ShouldCheckPromptSensitive() {
+		tokenGroup := c.GetString("token_group")
+		if setting.ShouldCheckPromptSensitiveWithGroup(tokenGroup) {
 			words, err := service.CheckSensitiveInput(audioRequest.Input)
 			if err != nil {
 				common.LogWarn(c, fmt.Sprintf("user sensitive words detected: %s", strings.Join(words, ",")))

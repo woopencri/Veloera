@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 	"veloera/common"
+	"veloera/setting/model_setting"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -116,6 +117,11 @@ func tokenMemoryRateLimitHandler(duration int64, totalMaxCount, successMaxCount 
 func TokenRateLimit() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		if !c.GetBool("token_rate_limit_enabled") {
+			c.Next()
+			return
+		}
+		tokenGroup := c.GetString("token_group")
+		if model_setting.ShouldBypassRateLimit(tokenGroup) {
 			c.Next()
 			return
 		}
