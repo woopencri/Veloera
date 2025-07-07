@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Unreleased changes
 
 ### Documentation
+- :robot: changelog file generated [`8bfb23e3`](https://github.com/Veloera/Veloera/commit/8bfb23e3)
 - :robot: changelog file generated [`bbc8bfbd`](https://github.com/Veloera/Veloera/commit/bbc8bfbd)
 
 ### Chore
