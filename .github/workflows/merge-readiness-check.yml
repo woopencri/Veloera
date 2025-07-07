@@ -66,4 +66,4 @@ jobs:
                 core.info("PR passed all merge readiness checks. Good to go!");
             }
           env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub's default token
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
