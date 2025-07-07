@@ -697,11 +697,14 @@ const EditChannel = (props) => {
 
   const submit = async () => {
      // Update inputs.key from keyList before submitting if in list mode
+     let finalKey = inputs.key;
      if (useKeyListMode) {
-       updateKeyListToInput(keyList);
+       // Filter out empty strings before joining
+       const filteredKeyList = keyList.filter(key => key.trim().length > 0);
+       finalKey = filteredKeyList.join(',');
      }
 
-    if (!isEdit && (inputs.name === '' || inputs.key === '')) {
+    if (!isEdit && (inputs.name === '' || finalKey === '')) {
       showInfo(t('请填写渠道名称和渠道密钥！'));
       return;
     }
@@ -731,6 +734,10 @@ const EditChannel = (props) => {
 
 
     let localInputs = { ...inputs };
+    // Use the finalKey from multi-key mode if applicable
+    if (useKeyListMode) {
+      localInputs.key = finalKey;
+    }
     if (localInputs.base_url && localInputs.base_url.endsWith('/')) {
       localInputs.base_url = localInputs.base_url.slice(
         0,
