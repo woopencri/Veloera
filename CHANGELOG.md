@@ -6,11 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased changes
 
+## v0.3.29.1 (2025-07-07)
+
+### Chore
+- update dependencies and upgrade @visactor packages to latest versions [`077ef9a3`](https://github.com/Veloera/Veloera/commit/077ef9a3)
+
+## v0.3.29 (2025-07-07)
+
 ### Feature
 - add PR merge readiness check workflow [`9ac574b2`](https://github.com/Veloera/Veloera/commit/9ac574b2)
 - add exemption settings (#123) [`cc8a497a`](https://github.com/Veloera/Veloera/commit/cc8a497a)
 
 ### Bug Fixes
+- fix submit when using key list mode by filtering empty keys and updating input key [`afade86f`](https://github.com/Veloera/Veloera/commit/afade86f)
 - upgrade @visactor/react-vchart from 1.8.11 to 1.13.11 (#125) [`29f7c060`](https://github.com/Veloera/Veloera/commit/29f7c060)
 - upgrade @visactor/vchart from 1.8.11 to 1.13.11 (#124) [`0e276ca2`](https://github.com/Veloera/Veloera/commit/0e276ca2)
 - add custom endpoint support to aws bedrock adapter (#126) [`00b2b0b1`](https://github.com/Veloera/Veloera/commit/00b2b0b1)
@@ -19,6 +27,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Continuous Integration
 - remove merge readiness check workflow [`cae72d2a`](https://github.com/Veloera/Veloera/commit/cae72d2a)
 - remove comment from GITHUB_TOKEN line in merge readiness check workflow [`37424cf3`](https://github.com/Veloera/Veloera/commit/37424cf3)
+
+### Documentation
+- :robot: changelog file generated [`95570017`](https://github.com/Veloera/Veloera/commit/95570017)
+
+### Chore
+- remove add_responses_method.sh script [`52be55d6`](https://github.com/Veloera/Veloera/commit/52be55d6)
+
+### Other
+- Merge branch 'main' of https://github.com/Veloera/Veloera [`e72425ef`](https://github.com/Veloera/Veloera/commit/e72425ef)
 
 ## v0.3.28.1 (2025-06-28)
 
