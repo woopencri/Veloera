@@ -2,6 +2,8 @@ name: Generate Changelog
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'
 
 jobs:
   changelog:

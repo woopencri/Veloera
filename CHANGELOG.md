@@ -7,7 +7,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Unreleased changes
 
 ### Feature
+- add PR merge readiness check workflow [`9ac574b2`](https://github.com/Veloera/Veloera/commit/9ac574b2)
+- add exemption settings (#123) [`cc8a497a`](https://github.com/Veloera/Veloera/commit/cc8a497a)
+
+### Bug Fixes
+- upgrade @visactor/react-vchart from 1.8.11 to 1.13.11 (#125) [`29f7c060`](https://github.com/Veloera/Veloera/commit/29f7c060)
+- upgrade @visactor/vchart from 1.8.11 to 1.13.11 (#124) [`0e276ca2`](https://github.com/Veloera/Veloera/commit/0e276ca2)
+- add custom endpoint support to aws bedrock adapter (#126) [`00b2b0b1`](https://github.com/Veloera/Veloera/commit/00b2b0b1)
+- add Redis null check in redemption Redeem function (#121) [`0d9354e8`](https://github.com/Veloera/Veloera/commit/0d9354e8)
+
+### Continuous Integration
+- remove merge readiness check workflow [`cae72d2a`](https://github.com/Veloera/Veloera/commit/cae72d2a)
+- remove comment from GITHUB_TOKEN line in merge readiness check workflow [`37424cf3`](https://github.com/Veloera/Veloera/commit/37424cf3)
+
+## v0.3.28.1 (2025-06-28)
+
+### Feature
+- add support for GitHub channel and model listing (#113) [`55a54f4d`](https://github.com/Veloera/Veloera/commit/55a54f4d)
+
+## v0.3.28 (2025-06-28)
+
+### Feature
 - implement error logging (#112) [`7e55b846`](https://github.com/Veloera/Veloera/commit/7e55b846)
+
+### Documentation
+- :robot: changelog file generated [`1af99f86`](https://github.com/Veloera/Veloera/commit/1af99f86)
 
 ## v0.3.27.2 (2025-06-28)
 
