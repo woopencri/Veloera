@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased changes
 
+### Documentation
+- :robot: changelog file generated [`bbc8bfbd`](https://github.com/Veloera/Veloera/commit/bbc8bfbd)
+
+### Chore
+- add copyright header to most source files [`ffc8c43a`](https://github.com/Veloera/Veloera/commit/ffc8c43a)
+- add script to update copyright headers in web files [`111a5633`](https://github.com/Veloera/Veloera/commit/111a5633)
+- add script to update copyright headers in Go files [`0d843243`](https://github.com/Veloera/Veloera/commit/0d843243)
+- delete a useless bin file [`f1337203`](https://github.com/Veloera/Veloera/commit/f1337203)
+
+### Other
+- Merge branch 'main' of https://github.com/Veloera/Veloera [`1deb6e68`](https://github.com/Veloera/Veloera/commit/1deb6e68)
+
 ## v0.3.29.1 (2025-07-07)
 
 ### Chore
