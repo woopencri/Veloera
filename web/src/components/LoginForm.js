@@ -150,7 +150,7 @@ const LoginForm = () => {
             centered: true,
           });
         }
-        navigate(searchParams.get('returnTo') || '/token');
+        navigate(searchParams.get('returnTo') || '/app/tokens');
       } else {
         showError(message);
       }

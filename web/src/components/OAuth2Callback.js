@@ -40,20 +40,20 @@ const OAuth2Callback = (props) => {
     if (success) {
       if (message === 'bind') {
         showSuccess('绑定成功！');
-        navigate('/setting');
+        navigate('/admin/settings');
       } else {
         userDispatch({ type: 'login', payload: data });
         localStorage.setItem('user', JSON.stringify(data));
         setUserData(data);
         updateAPI();
         showSuccess('登录成功！');
-        navigate(searchParams.get('returnTo') || '/token');
+        navigate(searchParams.get('returnTo') || '/app/tokens');
       }
     } else {
       showError(message);
       if (count === 0) {
         setPrompt(`操作失败，重定向至登录界面中...`);
-        navigate('/setting'); // in case this is failed to bind GitHub
+        navigate('/admin/settings'); // in case this is failed to bind GitHub
         return;
       }
       count++;

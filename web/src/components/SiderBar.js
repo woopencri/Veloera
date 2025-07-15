@@ -87,20 +87,20 @@ const iconStyle = (itemKey, selectedKeys) => {
 // Define routerMap as a constant outside the component
 const routerMap = {
   home: '/',
-  channel: '/channel',
-  token: '/token',
-  redemption: '/redemption',
-  topup: '/topup',
-  user: '/user',
-  log: '/log',
-  midjourney: '/midjourney',
-  setting: '/setting',
+  channel: '/admin/channels',
+  token: '/app/tokens',
+  redemption: '/admin/coupons',
+  topup: '/app/wallet',
+  user: '/admin/users',
+  log: '/app/logs/api-usage',
+  midjourney: '/app/logs/drawing',
+  setting: '/admin/settings',
   about: '/about',
-  detail: '/detail',
+  detail: '/app/dashboard',
   pricing: '/pricing',
-  task: '/task',
+  task: '/app/logs/tasks',
   playground: '/playground',
-  personal: '/personal',
+  personal: '/app/me',
   message: '/admin/messages',
 };
 
@@ -162,7 +162,7 @@ const SiderBar = () => {
       {
         text: t('数据看板'),
         itemKey: 'detail',
-        to: '/detail',
+        to: '/app/dashboard',
         icon: <IconCalendarClock />,
         className:
           localStorage.getItem('enable_data_export') === 'true'
@@ -172,19 +172,19 @@ const SiderBar = () => {
       {
         text: t('API令牌'),
         itemKey: 'token',
-        to: '/token',
+        to: '/app/tokens',
         icon: <IconKey />,
       },
       {
         text: t('使用日志'),
         itemKey: 'log',
-        to: '/log',
+        to: '/app/logs/api-usage',
         icon: <IconHistogram />,
       },
       {
         text: t('绘图日志'),
         itemKey: 'midjourney',
-        to: '/midjourney',
+        to: '/app/logs/drawing',
         icon: <IconImage />,
         className:
           localStorage.getItem('enable_drawing') === 'true'
@@ -194,7 +194,7 @@ const SiderBar = () => {
       {
         text: t('任务日志'),
         itemKey: 'task',
-        to: '/task',
+        to: '/app/logs/tasks',
         icon: <IconChecklistStroked />,
         className:
           localStorage.getItem('enable_task') === 'true' ? '' : 'tableHiddle',
@@ -213,13 +213,13 @@ const SiderBar = () => {
       {
         text: t('钱包'),
         itemKey: 'topup',
-        to: '/topup',
+        to: '/app/wallet',
         icon: <IconCreditCard />,
       },
       {
         text: t('个人设置'),
         itemKey: 'personal',
-        to: '/personal',
+        to: '/app/me',
         icon: <IconUser />,
       },
     ],
@@ -231,14 +231,14 @@ const SiderBar = () => {
       {
         text: t('渠道'),
         itemKey: 'channel',
-        to: '/channel',
+        to: '/admin/channels',
         icon: <IconLayers />,
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
         text: t('兑换码'),
         itemKey: 'redemption',
-        to: '/redemption',
+        to: '/admin/coupons',
         icon: <IconGift />,
         className: isAdmin() ? '' : 'tableHiddle',
       },
@@ -252,13 +252,13 @@ const SiderBar = () => {
       {
         text: t('用户管理'),
         itemKey: 'user',
-        to: '/user',
+        to: '/admin/users',
         icon: <IconUser />,
       },
       {
         text: t('系统设置'),
         itemKey: 'setting',
-        to: '/setting',
+        to: '/admin/settings',
         icon: <IconSetting />,
       },
     ],

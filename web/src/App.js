@@ -76,7 +76,7 @@ function App() {
           }
         />
         <Route
-          path='/channel'
+          path='/admin/channels'
           element={
             <PrivateRoute>
               <Channel />
@@ -100,7 +100,7 @@ function App() {
           }
         />
         <Route
-          path='/token'
+          path='/app/tokens'
           element={
             <PrivateRoute>
               <Token />
@@ -116,7 +116,7 @@ function App() {
           }
         />
         <Route
-          path='/redemption'
+          path='/admin/coupons'
           element={
             <PrivateRoute>
               <Redemption />
@@ -124,7 +124,7 @@ function App() {
           }
         />
         <Route
-          path='/user'
+          path='/admin/users'
           element={
             <PrivateRoute>
               <User />
@@ -204,7 +204,7 @@ function App() {
           }
         />
         <Route
-          path='/setting'
+          path='/admin/settings'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -214,7 +214,7 @@ function App() {
           }
         />
         <Route
-          path='/personal'
+          path='/app/me'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -224,7 +224,7 @@ function App() {
           }
         />
         <Route
-          path='/topup'
+          path='/app/wallet'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -234,7 +234,7 @@ function App() {
           }
         />
         <Route
-          path='/log'
+          path='/app/logs/api-usage'
           element={
             <PrivateRoute>
               <Log />
@@ -242,7 +242,7 @@ function App() {
           }
         />
         <Route
-          path='/detail'
+          path='/app/dashboard'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -252,7 +252,7 @@ function App() {
           }
         />
         <Route
-          path='/midjourney'
+          path='/app/logs/drawing'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -262,7 +262,7 @@ function App() {
           }
         />
         <Route
-          path='/task'
+          path='/app/logs/tasks'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>

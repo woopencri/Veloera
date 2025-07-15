@@ -260,7 +260,7 @@ const HeaderBar = () => {
                 login: '/login',
                 register: '/register',
                 pricing: '/pricing',
-                detail: '/detail',
+                detail: '/app/dashboard',
                 home: '/',
                 chat: '/chat',
               };

@@ -154,7 +154,7 @@ export default function Sidebar() {
             icon={<Database size={20} />}
             items={[
               {
-                href: '/channel',
+                href: '/admin/channels',
                 text: t('channel.list'),
                 icon: <Database size={16} />
               },
@@ -164,7 +164,7 @@ export default function Sidebar() {
                 icon: <Database size={16} />
               }
             ]}
-            defaultOpen={pathname.startsWith('/channel')}
+            defaultOpen={pathname.startsWith('/admin/channels')}
           />
         )}
         
