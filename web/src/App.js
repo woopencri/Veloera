@@ -45,6 +45,9 @@ import OAuth2Callback from './components/OAuth2Callback.js';
 import PersonalSetting from './components/PersonalSetting.js';
 import Setup from './pages/Setup/index.js';
 import SetupCheck from './components/SetupCheck';
+import Inbox from './pages/Inbox';
+import Message from './pages/Message';
+import { AdminRoute } from './components/AdminRoute';
 
 const Home = lazy(() => import('./pages/Home'));
 const Detail = lazy(() => import('./pages/Detail'));
@@ -301,6 +304,38 @@ function App() {
                 <Chat2Link />
               </Suspense>
             </PrivateRoute>
+          }
+        />
+        {/* User inbox routes */}
+        <Route
+          path='/app/inbox'
+          element={
+            <PrivateRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <Inbox />
+              </Suspense>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/app/inbox/:id'
+          element={
+            <PrivateRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <Inbox />
+              </Suspense>
+            </PrivateRoute>
+          }
+        />
+        {/* Admin message management routes */}
+        <Route
+          path='/admin/messages'
+          element={
+            <AdminRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <Message />
+              </Suspense>
+            </AdminRoute>
           }
         />
         <Route path='*' element={<NotFound />} />

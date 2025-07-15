@@ -180,5 +180,27 @@ func SetApiRouter(router *gin.Engine) {
 			taskRoute.GET("/self", middleware.UserAuth(), controller.GetUserTask)
 			taskRoute.GET("/", middleware.AdminAuth(), controller.GetAllTask)
 		}
+
+		// User message routes
+		userMessageRoute := apiRouter.Group("/user/messages")
+		userMessageRoute.Use(middleware.UserAuth())
+		{
+			userMessageRoute.GET("/", controller.GetUserMessages)
+			userMessageRoute.PUT("/:id/read", controller.MarkMessageAsRead)
+			userMessageRoute.GET("/unread_count", controller.GetUnreadCount)
+		}
+
+		// Admin message routes
+		adminMessageRoute := apiRouter.Group("/admin/messages")
+		adminMessageRoute.Use(middleware.AdminAuth())
+		{
+			adminMessageRoute.GET("/", controller.GetAllMessages)
+			adminMessageRoute.GET("/search", controller.SearchMessages)
+			adminMessageRoute.GET("/:id", controller.GetMessage)
+			adminMessageRoute.POST("/", controller.CreateMessage)
+			adminMessageRoute.PUT("/:id", controller.UpdateMessage)
+			adminMessageRoute.DELETE("/:id", controller.DeleteMessage)
+			adminMessageRoute.GET("/:id/recipients", controller.GetMessageRecipients)
+		}
 	}
 }

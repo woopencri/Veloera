@@ -57,6 +57,7 @@ import { stringToColor } from '../helpers/render';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
 import { StyleContext } from '../context/Style/index.js';
 import { StatusContext } from '../context/Status/index.js';
+import InboxIcon from './InboxIcon';
 
 // 自定义顶部栏样式
 const headerStyle = {
@@ -457,6 +458,7 @@ const HeaderBar = () => {
                 </Dropdown>
                 {userState.user ? (
                   <>
+                    <InboxIcon />
                     <Dropdown
                       position='bottomRight'
                       render={

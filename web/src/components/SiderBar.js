@@ -39,26 +39,18 @@ import {
   IconCommentStroked,
   IconCreditCard,
   IconGift,
-  IconHelpCircle,
   IconHistogram,
-  IconHome,
   IconImage,
   IconKey,
   IconLayers,
-  IconPriceTag,
+  IconMail,
   IconSetting,
   IconUser,
 } from '@douyinfe/semi-icons';
 import {
-  Avatar,
-  Dropdown,
-  Layout,
   Nav,
-  Switch,
   Divider,
 } from '@douyinfe/semi-ui';
-import { setStatusData } from '../helpers/data.js';
-import { stringToColor } from '../helpers/render.js';
 import { useSetTheme, useTheme } from '../context/Theme/index.js';
 import { StyleContext } from '../context/Style/index.js';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
@@ -109,6 +101,7 @@ const routerMap = {
   task: '/task',
   playground: '/playground',
   personal: '/personal',
+  message: '/admin/messages',
 };
 
 const SiderBar = () => {
@@ -146,6 +139,7 @@ const SiderBar = () => {
       'task',
       'playground',
       'personal',
+      'message',
     ];
     // 添加聊天项的keys
     for (let i = 0; i < chatItems.length; i++) {
@@ -246,6 +240,13 @@ const SiderBar = () => {
         itemKey: 'redemption',
         to: '/redemption',
         icon: <IconGift />,
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
+      {
+        text: t('消息管理'),
+        itemKey: 'message',
+        to: '/admin/messages',
+        icon: <IconMail />,
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
