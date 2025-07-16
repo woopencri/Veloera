@@ -147,7 +147,7 @@ var GeminiSafetySetting string
 var CohereSafetySetting string
 
 const (
-	RequestIdKey = "X-Oneapi-Request-Id"
+	RequestIdKey = "X-Veloera-Request-Id"
 )
 
 const (
