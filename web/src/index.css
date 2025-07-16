@@ -57,6 +57,15 @@ body {
   padding-right: 30px;
 }
 
+.semi-navigation-list a {
+  display: block;      /* 确保 a 是块级元素，margin-bottom 才生效 */
+  margin-bottom: 3px;
+}
+
+.semi-table-row-cell > div:first-of-type > * {
+  margin-right: 3px !important;
+}
+
 .semi-banner {
   border-radius: 5px;
 }
