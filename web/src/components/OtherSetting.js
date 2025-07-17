@@ -42,6 +42,9 @@ const OtherSetting = () => {
     Footer: '',
     About: '',
     HomePageContent: '',
+    custom_head_html: '',
+    global_css: '',
+    global_js: '',
   });
   let [loading, setLoading] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -74,6 +77,9 @@ const OtherSetting = () => {
     About: false,
     Footer: false,
     CheckUpdate: false,
+    custom_head_html: false,
+    global_css: false,
+    global_js: false,
   });
   const handleInputChange = async (value, e) => {
     const name = e.target.id;
@@ -173,6 +179,48 @@ const OtherSetting = () => {
       showError('页脚内容更新失败');
     } finally {
       setLoadingInput((loadingInput) => ({ ...loadingInput, Footer: false }));
+    }
+  };
+
+  // 个性化设置 - 自定义头部HTML
+  const submitCustomHeadHtml = async () => {
+    try {
+      setLoadingInput((loadingInput) => ({ ...loadingInput, custom_head_html: true }));
+      await updateOption('custom_head_html', inputs.custom_head_html);
+      showSuccess('自定义头部HTML已更新');
+    } catch (error) {
+      console.error('自定义头部HTML更新失败', error);
+      showError('自定义头部HTML更新失败');
+    } finally {
+      setLoadingInput((loadingInput) => ({ ...loadingInput, custom_head_html: false }));
+    }
+  };
+
+  // 个性化设置 - 全局CSS样式
+  const submitGlobalCss = async () => {
+    try {
+      setLoadingInput((loadingInput) => ({ ...loadingInput, global_css: true }));
+      await updateOption('global_css', inputs.global_css);
+      showSuccess('全局CSS样式已更新');
+    } catch (error) {
+      console.error('全局CSS样式更新失败', error);
+      showError('全局CSS样式更新失败');
+    } finally {
+      setLoadingInput((loadingInput) => ({ ...loadingInput, global_css: false }));
+    }
+  };
+
+  // 个性化设置 - 全局JavaScript代码
+  const submitGlobalJs = async () => {
+    try {
+      setLoadingInput((loadingInput) => ({ ...loadingInput, global_js: true }));
+      await updateOption('global_js', inputs.global_js);
+      showSuccess('全局JavaScript代码已更新');
+    } catch (error) {
+      console.error('全局JavaScript代码更新失败', error);
+      showError('全局JavaScript代码更新失败');
+    } finally {
+      setLoadingInput((loadingInput) => ({ ...loadingInput, global_js: false }));
     }
   };
 
@@ -403,6 +451,45 @@ const OtherSetting = () => {
               />
               <Button onClick={submitFooter} loading={loadingInput['Footer']}>
                 {t('设置页脚')}
+              </Button>
+              <Form.TextArea
+                label={t('自定义头部 HTML')}
+                placeholder={t(
+                  '在此输入自定义 HTML 头部内容，将替换页面中的占位符'
+                )}
+                field={'custom_head_html'}
+                onChange={handleInputChange}
+                style={{ fontFamily: 'JetBrains Mono, Consolas' }}
+                autosize={{ minRows: 6, maxRows: 12 }}
+              />
+              <Button onClick={submitCustomHeadHtml} loading={loadingInput['custom_head_html']}>
+                {t('设置自定义头部 HTML')}
+              </Button>
+              <Form.TextArea
+                label={t('全局 CSS 样式')}
+                placeholder={t(
+                  '在此输入自定义 CSS 样式代码'
+                )}
+                field={'global_css'}
+                onChange={handleInputChange}
+                style={{ fontFamily: 'JetBrains Mono, Consolas' }}
+                autosize={{ minRows: 6, maxRows: 12 }}
+              />
+              <Button onClick={submitGlobalCss} loading={loadingInput['global_css']}>
+                {t('设置全局 CSS 样式')}
+              </Button>
+              <Form.TextArea
+                label={t('全局 JavaScript 代码')}
+                placeholder={t(
+                  '在此输入自定义 JavaScript 代码'
+                )}
+                field={'global_js'}
+                onChange={handleInputChange}
+                style={{ fontFamily: 'JetBrains Mono, Consolas' }}
+                autosize={{ minRows: 6, maxRows: 12 }}
+              />
+              <Button onClick={submitGlobalJs} loading={loadingInput['global_js']}>
+                {t('设置全局 JavaScript 代码')}
               </Button>
             </Form.Section>
           </Card>

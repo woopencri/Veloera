@@ -147,6 +147,11 @@ func InitOptionMap() {
 	common.OptionMap["StreamCacheQueueLength"] = strconv.Itoa(setting.StreamCacheQueueLength)
 	common.OptionMap["AutomaticDisableKeywords"] = operation_setting.AutomaticDisableKeywordsToString()
 
+	// Add custom content options for system customization
+	common.OptionMap["custom_head_html"] = ""
+	common.OptionMap["global_css"] = ""
+	common.OptionMap["global_js"] = ""
+
 	// 自动添加所有注册的模型配置
 	modelConfigs := config.GlobalConfig.ExportAllConfigs()
 	for k, v := range modelConfigs {

@@ -297,3 +297,39 @@ func ResetPassword(c *gin.Context) {
 	})
 	return
 }
+
+// GetCustomCSS serves the global CSS content
+func GetCustomCSS(c *gin.Context) {
+	common.OptionMapRWMutex.RLock()
+	cssContent := common.OptionMap["global_css"]
+	common.OptionMapRWMutex.RUnlock()
+	
+	if cssContent == "" {
+		c.Status(http.StatusNoContent)
+		return
+	}
+	
+	// Basic security validation to prevent script tag injection in CSS
+	if strings.Contains(strings.ToLower(cssContent), "<script") {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	
+	c.Header("Content-Type", "text/css")
+	c.String(http.StatusOK, cssContent)
+}
+
+// GetCustomJS serves the global JavaScript content
+func GetCustomJS(c *gin.Context) {
+	common.OptionMapRWMutex.RLock()
+	jsContent := common.OptionMap["global_js"]
+	common.OptionMapRWMutex.RUnlock()
+	
+	if jsContent == "" {
+		c.Status(http.StatusNoContent)
+		return
+	}
+	
+	c.Header("Content-Type", "application/javascript")
+	c.String(http.StatusOK, jsContent)
+}
