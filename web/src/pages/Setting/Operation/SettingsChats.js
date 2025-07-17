@@ -139,12 +139,6 @@ export default function SettingsChats(props) {
       >
         <Form.Section text={t('令牌聊天设置')}>
           <Banner
-            type='warning'
-            description={t(
-              '必须将上方聊天链接全部设置为空，才能使用下方聊天设置功能',
-            )}
-          />
-          <Banner
             type='info'
             description={t(
               '链接中的{key}将自动替换为sk-xxxx，{address}将自动替换为系统设置的服务器地址，末尾不带/和/v1',
