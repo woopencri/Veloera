@@ -128,6 +128,8 @@ export default function SettingsCreditLimit(props) {
                   onChange={handleFieldChange('PreConsumedQuota')}
                 />
               </Col>
+            </Row>
+            <Row gutter={16}>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
                   label={t('邀请新用户奖励额度')}
@@ -140,8 +142,6 @@ export default function SettingsCreditLimit(props) {
                   onChange={handleFieldChange('QuotaForInviter')}
                 />
               </Col>
-            </Row>
-            <Row>
               <Col xs={24} sm={12} md={8} lg={8} xl={6}>
                 <Form.InputNumber
                   label={t('新用户使用邀请码奖励额度')}
