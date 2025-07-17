@@ -73,9 +73,17 @@ const RegisterForm = () => {
   let navigate = useNavigate();
   const logo = getLogo();
 
-  let affCode = new URLSearchParams(window.location.search).get('aff');
-  if (affCode) {
-    localStorage.setItem('aff', affCode);
+  // Conditionally handle AFF parameters based on aff_enabled status
+  let affCode = null;
+  let statusFromStorage = localStorage.getItem('status');
+  if (statusFromStorage) {
+    statusFromStorage = JSON.parse(statusFromStorage);
+    if (statusFromStorage.aff_enabled === true) {
+      affCode = new URLSearchParams(window.location.search).get('aff');
+      if (affCode) {
+        localStorage.setItem('aff', affCode);
+      }
+    }
   }
 
   useEffect(() => {
@@ -136,10 +144,19 @@ const RegisterForm = () => {
         return;
       }
       setLoading(true);
-      if (!affCode) {
-        affCode = localStorage.getItem('aff');
+      
+      // Only handle AFF code if AFF functionality is enabled
+      let statusFromStorage = localStorage.getItem('status');
+      if (statusFromStorage) {
+        statusFromStorage = JSON.parse(statusFromStorage);
+        if (statusFromStorage.aff_enabled === true) {
+          if (!affCode) {
+            affCode = localStorage.getItem('aff');
+          }
+          inputs.aff_code = affCode;
+        }
       }
-      inputs.aff_code = affCode;
+      
       const res = await API.post(
         `/api/user/register?turnstile=${turnstileToken}`,
         inputs,

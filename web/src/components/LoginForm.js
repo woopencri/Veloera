@@ -73,9 +73,17 @@ const LoginForm = () => {
 
   const logo = getLogo();
 
-  let affCode = new URLSearchParams(window.location.search).get('aff');
-  if (affCode) {
-    localStorage.setItem('aff', affCode);
+  // Conditionally handle AFF parameters based on aff_enabled status
+  let affCode = null;
+  let statusFromStorage = localStorage.getItem('status');
+  if (statusFromStorage) {
+    statusFromStorage = JSON.parse(statusFromStorage);
+    if (statusFromStorage.aff_enabled === true) {
+      affCode = new URLSearchParams(window.location.search).get('aff');
+      if (affCode) {
+        localStorage.setItem('aff', affCode);
+      }
+    }
   }
 
   useEffect(() => {

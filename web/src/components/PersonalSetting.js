@@ -91,6 +91,7 @@ const PersonalSetting = () => {
   const [countdown, setCountdown] = useState(30);
   const [affLink, setAffLink] = useState('');
   const [systemToken, setSystemToken] = useState('');
+  const [affEnabled, setAffEnabled] = useState(true);
   const [models, setModels] = useState([]);
   const [openTransfer, setOpenTransfer] = useState(false);
   const [transferAmount, setTransferAmount] = useState(0);
@@ -123,12 +124,15 @@ const PersonalSetting = () => {
         setTurnstileSiteKey(status.turnstile_site_key);
       }
       setCheckInEnabled(status.check_in_enabled === true);
+      setAffEnabled(status.aff_enabled === true);
     }
     getUserData().then((res) => {
       console.log(userState);
     });
     loadModels().then();
-    getAffLink().then();
+    if (status && status.aff_enabled === true) {
+      getAffLink().then();
+    }
     checkUserCanCheckIn().then();
     setTransferAmount(getQuotaPerUnit());
   }, []);
@@ -445,15 +449,16 @@ const PersonalSetting = () => {
     <div>
       <Layout>
         <Layout.Content>
-          <Modal
-            title={t('请输入要划转的数量')}
-            visible={openTransfer}
-            onOk={transfer}
-            onCancel={handleCancel}
-            maskClosable={false}
-            size={'small'}
-            centered={true}
-          >
+          {affEnabled && (
+            <Modal
+              title={t('请输入要划转的数量')}
+              visible={openTransfer}
+              onOk={transfer}
+              onCancel={handleCancel}
+              maskClosable={false}
+              size={'small'}
+              centered={true}
+            >
             <div style={{ marginTop: 20 }}>
               <Typography.Text>
                 {t('可用额度')}
@@ -482,6 +487,7 @@ const PersonalSetting = () => {
               </div>
             </div>
           </Modal>
+          )}
           <div>
             <Card
               title={
@@ -633,45 +639,47 @@ const PersonalSetting = () => {
               </Card>
             )}
             
-            <Card
-              style={{ marginTop: 10 }}
-              footer={
-                <div>
-                  <Typography.Text>{t('邀请链接')}</Typography.Text>
-                  <Input
-                    style={{ marginTop: 10 }}
-                    value={affLink}
-                    onClick={handleAffLinkClick}
-                    readOnly
-                  />
+            {affEnabled && (
+              <Card
+                style={{ marginTop: 10 }}
+                footer={
+                  <div>
+                    <Typography.Text>{t('邀请链接')}</Typography.Text>
+                    <Input
+                      style={{ marginTop: 10 }}
+                      value={affLink}
+                      onClick={handleAffLinkClick}
+                      readOnly
+                    />
+                  </div>
+                }
+              >
+                <Typography.Title heading={6}>{t('邀请信息')}</Typography.Title>
+                <div style={{ marginTop: 10 }}>
+                  <Descriptions row>
+                    <Descriptions.Item itemKey={t('待使用收益')}>
+                      <span style={{ color: 'rgba(var(--semi-red-5), 1)' }}>
+                        {renderQuota(userState?.user?.aff_quota)}
+                      </span>
+                      <Button
+                        type={'secondary'}
+                        onClick={() => setOpenTransfer(true)}
+                        size={'small'}
+                        style={{ marginLeft: 10 }}
+                      >
+                        {t('划转')}
+                      </Button>
+                    </Descriptions.Item>
+                    <Descriptions.Item itemKey={t('总收益')}>
+                      {renderQuota(userState?.user?.aff_history_quota)}
+                    </Descriptions.Item>
+                    <Descriptions.Item itemKey={t('邀请人数')}>
+                      {userState?.user?.aff_count}
+                    </Descriptions.Item>
+                  </Descriptions>
                 </div>
-              }
-            >
-              <Typography.Title heading={6}>{t('邀请信息')}</Typography.Title>
-              <div style={{ marginTop: 10 }}>
-                <Descriptions row>
-                  <Descriptions.Item itemKey={t('待使用收益')}>
-                    <span style={{ color: 'rgba(var(--semi-red-5), 1)' }}>
-                      {renderQuota(userState?.user?.aff_quota)}
-                    </span>
-                    <Button
-                      type={'secondary'}
-                      onClick={() => setOpenTransfer(true)}
-                      size={'small'}
-                      style={{ marginLeft: 10 }}
-                    >
-                      {t('划转')}
-                    </Button>
-                  </Descriptions.Item>
-                  <Descriptions.Item itemKey={t('总收益')}>
-                    {renderQuota(userState?.user?.aff_history_quota)}
-                  </Descriptions.Item>
-                  <Descriptions.Item itemKey={t('邀请人数')}>
-                    {userState?.user?.aff_count}
-                  </Descriptions.Item>
-                </Descriptions>
-              </div>
-            </Card>
+              </Card>
+            )}
             <Card style={{ marginTop: 10 }}>
               <Typography.Title heading={6}>{t('个人信息')}</Typography.Title>
               <div style={{ marginTop: 20 }}>

@@ -35,6 +35,7 @@ export default function SettingsCreditLimit(props) {
     PreConsumedQuota: '',
     QuotaForInviter: '',
     QuotaForInvitee: '',
+    AffEnabled: false,
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -152,6 +153,13 @@ export default function SettingsCreditLimit(props) {
                   extraText={''}
                   placeholder={t('例如：1000')}
                   onChange={handleFieldChange('QuotaForInvitee')}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8} lg={8} xl={6}>
+                <Form.Switch
+                  label={t('启用 AFF 功能')}
+                  field={'AffEnabled'}
+                  onChange={handleFieldChange('AffEnabled')}
                 />
               </Col>
             </Row>

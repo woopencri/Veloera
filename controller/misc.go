@@ -48,6 +48,10 @@ func TestStatus(c *gin.Context) {
 }
 
 func GetStatus(c *gin.Context) {
+	common.OptionMapRWMutex.RLock()
+	affEnabled := common.OptionMap["AffEnabled"] == "true"
+	common.OptionMapRWMutex.RUnlock()
+	
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -91,6 +95,7 @@ func GetStatus(c *gin.Context) {
 			"oidc_authorization_endpoint": system_setting.GetOIDCSettings().AuthorizationEndpoint,
 			"setup":                       constant.Setup,
 			"check_in_enabled":            common.CheckInEnabled,
+			"aff_enabled":                 affEnabled,
 		},
 	})
 	return

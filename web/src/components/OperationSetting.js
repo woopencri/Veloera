@@ -88,6 +88,7 @@ const OperationSetting = () => {
     CheckInMaxQuota: '',
     RebateEnabled: false,
     RebatePercentage: 0,
+    AffEnabled: false,
   });
 
   let [loading, setLoading] = useState(false);

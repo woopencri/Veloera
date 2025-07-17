@@ -20,10 +20,23 @@ import { API, showError } from '../helpers';
 
 export async function getOAuthState() {
   let path = '/api/oauth/state';
-  let affCode = localStorage.getItem('aff');
-  if (affCode && affCode.length > 0) {
-    path += `?aff=${affCode}`;
+  
+  // Check AFF toggle status before processing AFF code
+  let statusFromStorage = localStorage.getItem('status');
+  let affEnabled = false;
+  if (statusFromStorage) {
+    statusFromStorage = JSON.parse(statusFromStorage);
+    affEnabled = statusFromStorage.aff_enabled === true;
   }
+  
+  // Only append AFF code to OAuth state URL when aff_enabled is true
+  if (affEnabled) {
+    let affCode = localStorage.getItem('aff');
+    if (affCode && affCode.length > 0) {
+      path += `?aff=${affCode}`;
+    }
+  }
+  
   const res = await API.get(path);
   const { success, message, data } = res.data;
   if (success) {
