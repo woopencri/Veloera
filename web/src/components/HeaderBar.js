@@ -95,7 +95,7 @@ const systemNameStyle = {
   fontWeight: 'bold',
   fontSize: '18px',
   background:
-    'linear-gradient(45deg, var(--semi-color-primary), var(--semi-color-secondary))',
+    'linear-gradient(45deg, var(--semi-color-primary), var(--semi-color-link-hover))',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   padding: '0 5px',
