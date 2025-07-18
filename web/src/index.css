@@ -57,9 +57,24 @@ body {
   padding-right: 30px;
 }
 
+.semi-navigation-item {
+  display: flex;
+  align-items: center; /* 垂直居中 */
+}
+
 .semi-navigation-list a {
   display: block;      /* 确保 a 是块级元素，margin-bottom 才生效 */
-  margin-bottom: 3px;
+  margin-bottom: 6px;
+  border-radius: 99px;
+}
+
+.semi-navigation-list a li {
+  border-radius: 99px;
+}
+
+.semi-navigation-list span {
+  display: block;
+  margin-bottom: 1px;
 }
 
 .semi-table-row-cell > div:first-of-type > * {
