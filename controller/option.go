@@ -23,6 +23,7 @@ import (
 	"veloera/common"
 	"veloera/model"
 	"veloera/setting"
+	"veloera/setting/operation_setting"
 	"veloera/setting/system_setting"
 
 	"github.com/gin-gonic/gin"
@@ -139,6 +140,35 @@ func UpdateOption(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
+	})
+	return
+}
+
+// ValidateFallbackPricing validates fallback pricing configuration before saving
+func ValidateFallbackPricing(c *gin.Context) {
+	var config operation_setting.FallbackPricingConfig
+	err := json.NewDecoder(c.Request.Body).Decode(&config)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "无效的参数",
+		})
+		return
+	}
+
+	// Validate the fallback pricing configuration
+	err = operation_setting.ValidateFallbackPricingConfig(config)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "兜底倍率配置验证通过",
 	})
 	return
 }

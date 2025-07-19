@@ -81,14 +81,14 @@ func updatePricing() {
 			ModelName:   model,
 			EnableGroup: groups,
 		}
-		modelPrice, findPrice := operation_setting.GetModelPrice(model, false)
+		modelPrice, findPrice := operation_setting.GetModelPriceWithFallback(model, false)
 		if findPrice {
 			pricing.ModelPrice = modelPrice
 			pricing.QuotaType = 1
 		} else {
-			modelRatio, _ := operation_setting.GetModelRatio(model)
+			modelRatio, _ := operation_setting.GetModelRatioWithFallback(model)
 			pricing.ModelRatio = modelRatio
-			pricing.CompletionRatio = operation_setting.GetCompletionRatio(model)
+			pricing.CompletionRatio = operation_setting.GetCompletionRatioWithFallback(model)
 			pricing.QuotaType = 0
 		}
 		pricingMap = append(pricingMap, pricing)

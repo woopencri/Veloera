@@ -152,6 +152,12 @@ func InitOptionMap() {
 	common.OptionMap["global_css"] = ""
 	common.OptionMap["global_js"] = ""
 
+	// Add fallback pricing options
+	common.OptionMap["fallback_pricing_enabled"] = "false"
+	common.OptionMap["fallback_single_price"] = ""
+	common.OptionMap["fallback_input_ratio"] = ""
+	common.OptionMap["fallback_completion_ratio"] = ""
+
 	// 自动添加所有注册的模型配置
 	modelConfigs := config.GlobalConfig.ExportAllConfigs()
 	for k, v := range modelConfigs {

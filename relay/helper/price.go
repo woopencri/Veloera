@@ -53,7 +53,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		modelNameForRatio = info.UpstreamModelName
 	}
 
-	modelPrice, usePrice := operation_setting.GetModelPrice(modelNameForPrice, false)
+	modelPrice, usePrice := operation_setting.GetModelPriceWithFallback(modelNameForPrice, false)
 	groupRatio := setting.GetGroupRatio(info.Group)
 	var preConsumedQuota int
 	var modelRatio float64
@@ -66,7 +66,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 			preConsumedTokens = promptTokens + completionTokens
 		}
 		var success bool
-		modelRatio, success = operation_setting.GetModelRatio(modelNameForRatio)
+		modelRatio, success = operation_setting.GetModelRatioWithFallback(modelNameForRatio)
 		if !success {
 			acceptUnsetRatio := false
 			if accept, ok := info.UserSetting[constant2.UserAcceptUnsetRatioModel]; ok {
@@ -79,7 +79,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 				return PriceData{}, fmt.Errorf("模型 %s 倍率或价格未配置，请联系管理员设置或开始自用模式；Model %s ratio or price not set, please set or start self-use mode", info.OriginModelName, info.OriginModelName)
 			}
 		}
-		completionRatio = operation_setting.GetCompletionRatio(modelNameForRatio)
+		completionRatio = operation_setting.GetCompletionRatioWithFallback(modelNameForRatio)
 		cacheRatio, _ = operation_setting.GetCacheRatio(modelNameForRatio)
 		cacheCreationRatio, _ = operation_setting.GetCreateCacheRatio(modelNameForRatio)
 		ratio := modelRatio * groupRatio
@@ -107,11 +107,11 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 }
 
 func ContainPriceOrRatio(modelName string) bool {
-	_, ok := operation_setting.GetModelPrice(modelName, false)
+	_, ok := operation_setting.GetModelPriceWithFallback(modelName, false)
 	if ok {
 		return true
 	}
-	_, ok = operation_setting.GetModelRatio(modelName)
+	_, ok = operation_setting.GetModelRatioWithFallback(modelName)
 	if ok {
 		return true
 	}
