@@ -89,6 +89,14 @@ body {
   border-radius: 5px;
 }
 
+.semi-switch-checked {
+  background-color: var(--semi-color-primary);
+}
+
+.semi-switch-checked:hover {
+  background-color: var(--semi-color-primary-hover);
+}
+
 @media only screen and (max-width: 767px) {
   /*.semi-navigation-sub-wrap .semi-navigation-sub-title, .semi-navigation-item {*/
   /*  padding: 0 0;*/
