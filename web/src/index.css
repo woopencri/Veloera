@@ -290,7 +290,6 @@ code {
 
 .topnav .semi-navigation-item:hover {
   background-color: var(--semi-color-primary-light-default);
-  transform: translateY(-2px);
   box-shadow: 0 2px 8px rgba(var(--semi-color-primary-rgb), 0.2);
 }
 
