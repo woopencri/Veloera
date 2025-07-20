@@ -282,6 +282,10 @@ code {
   padding: 0 16px;
 }
 
+.semi-banner {
+  margin-bottom: 0.7rem;
+}
+
 .topnav .semi-navigation-item {
   border-radius: 4px;
   margin: 0 2px;

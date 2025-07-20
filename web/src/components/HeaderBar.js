@@ -368,36 +368,60 @@ const HeaderBar = () => {
                   }
                 : {
                     logo: (
-                      <div style={logoStyle}>
-                        <img src={logo} alt='logo' style={{ height: '28px' }} />
-                      </div>
-                    ),
-                    text: (
-                      <div
-                        style={{
-                          position: 'relative',
-                          display: 'inline-block',
+                      <Link 
+                        to="/" 
+                        style={{ textDecoration: 'none' }}
+                        onClick={() => {
+                          styleDispatch({
+                            type: 'SET_INNER_PADDING',
+                            payload: false,
+                          });
+                          styleDispatch({ type: 'SET_SIDER', payload: false });
                         }}
                       >
-                        <span style={systemNameStyle}>{systemName}</span>
-                        {(isSelfUseMode || isDemoSiteMode) && (
-                          <Tag
-                            color={isSelfUseMode ? 'purple' : 'blue'}
-                            style={{
-                              position: 'absolute',
-                              top: '-10px',
-                              right: '-25px',
-                              fontSize: '0.7rem',
-                              padding: '0 4px',
-                              whiteSpace: 'nowrap',
-                              zIndex: 1,
-                              boxShadow: '0 0 3px rgba(255, 255, 255, 0.7)',
-                            }}
-                          >
-                            {isSelfUseMode ? t('自用模式') : t('演示站点')}
-                          </Tag>
-                        )}
-                      </div>
+                        <div style={{ ...logoStyle, cursor: 'pointer' }}>
+                          <img src={logo} alt='logo' style={{ height: '28px' }} />
+                        </div>
+                      </Link>
+                    ),
+                    text: (
+                      <Link 
+                        to="/" 
+                        style={{ textDecoration: 'none' }}
+                        onClick={() => {
+                          styleDispatch({
+                            type: 'SET_INNER_PADDING',
+                            payload: false,
+                          });
+                          styleDispatch({ type: 'SET_SIDER', payload: false });
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: 'relative',
+                            display: 'inline-block',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <span style={systemNameStyle}>{systemName}</span>
+                          {(isSelfUseMode || isDemoSiteMode) && (
+                            <Tag
+                              color={isSelfUseMode ? 'purple' : 'blue'}
+                              style={{
+                                position: 'absolute',
+                                top: '-10px',
+                                right: '-25px',
+                                fontSize: '0.7rem',
+                                padding: '0 4px',
+                                whiteSpace: 'nowrap',
+                                zIndex: 1,
+                              }}
+                            >
+                              {isSelfUseMode ? t('自用模式') : t('演示站点')}
+                            </Tag>
+                          )}
+                        </div>
+                      </Link>
                     ),
                   }
             }
