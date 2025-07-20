@@ -119,12 +119,13 @@ func enhancePricingWithPrefixes(pricing []model.Pricing, group string) []model.P
 
 	// Now add original models that either:
 	// - Don't have a prefixed version
-	// - OR are also available directly (without prefix)
+	// - AND are also available directly (without prefix)
 	for _, modelPricing := range pricing {
 		modelName := modelPricing.ModelName
 
-		// If this model doesn't have a prefixed version, or is available from non-prefixed channels
-		if !modelsWithPrefix[modelName] || modelsFromNonPrefixedChannels[modelName] {
+		// Only add original model if it doesn't have a prefixed version AND is available from non-prefixed channels
+		// This prevents duplicate display when a model has both prefixed and non-prefixed versions
+		if !modelsWithPrefix[modelName] && modelsFromNonPrefixedChannels[modelName] {
 			result = append(result, modelPricing)
 		}
 	}

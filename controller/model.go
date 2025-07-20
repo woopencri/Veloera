@@ -297,27 +297,41 @@ func ListModels(c *gin.Context) {
 		}
 
 		// Second, add all models available to the group (including non-prefixed ones)
-		// that haven't been added yet.
+		// that haven't been added yet and don't have prefixed versions already added.
 		for _, modelName := range models {
 			if processedModels[modelName] {
 				continue // Skip if this model (prefixed or non-prefixed) was already added
 			}
 
-			// Construct and add the non-prefixed model to userOpenAiModels
-			if modelData, ok := openAIModelsMap[modelName]; ok {
-				userOpenAiModels = append(userOpenAiModels, modelData)
-			} else {
-				userOpenAiModels = append(userOpenAiModels, dto.OpenAIModels{
-					Id:         modelName,
-					Object:     "model",
-					Created:    1626777600,
-					OwnedBy:    "custom", // Or derive from channel if possible
-					Permission: permission,
-					Root:       modelName,
-					Parent:     nil,
-				})
+			// Check if this model has prefixed versions that were already added
+			hasProcessedPrefixedVersion := false
+			if prefixedVersions, exists := modelPrefixMap[modelName]; exists {
+				for _, prefixedVersion := range prefixedVersions {
+					if processedModels[prefixedVersion] {
+						hasProcessedPrefixedVersion = true
+						break
+					}
+				}
 			}
-			processedModels[modelName] = true
+
+			// Only add the non-prefixed model if no prefixed version was added
+			if !hasProcessedPrefixedVersion {
+				// Construct and add the non-prefixed model to userOpenAiModels
+				if modelData, ok := openAIModelsMap[modelName]; ok {
+					userOpenAiModels = append(userOpenAiModels, modelData)
+				} else {
+					userOpenAiModels = append(userOpenAiModels, dto.OpenAIModels{
+						Id:         modelName,
+						Object:     "model",
+						Created:    1626777600,
+						OwnedBy:    "custom", // Or derive from channel if possible
+						Permission: permission,
+						Root:       modelName,
+						Parent:     nil,
+					})
+				}
+				processedModels[modelName] = true
+			}
 		}
 	}
 

@@ -559,20 +559,28 @@ func GetUserModels(c *gin.Context) {
 	}
 
 	// Then add remaining models without prefixes that are allowed for the user's group
+	// Only add base models that don't have any prefixed versions already added
 	for group := range groups {
 		groupModels := model.GetGroupModels(group)
 		for _, baseModel := range groupModels {
-			// Check if this base model was already added with a prefix
-			isPrefixed := false
+			// Skip if this base model was already added
+			if addedModels[baseModel] {
+				continue
+			}
+
+			// Check if any prefixed version of this base model was already added
+			hasAddedPrefixedVersion := false
 			if prefixedModels, ok := modelPrefixMap[baseModel]; ok {
 				for _, prefixedName := range prefixedModels {
 					if addedModels[prefixedName] {
-						isPrefixed = true
+						hasAddedPrefixedVersion = true
 						break
 					}
 				}
 			}
-			if !isPrefixed && !addedModels[baseModel] {
+
+			// Only add the base model if no prefixed version was added
+			if !hasAddedPrefixedVersion {
 				models = append(models, baseModel)
 				addedModels[baseModel] = true
 			}
