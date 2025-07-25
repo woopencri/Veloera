@@ -17,14 +17,10 @@
 package controller
 
 import (
-	"crypto/md5"
 	"fmt"
 	"log"
-	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 	"veloera/common"
@@ -32,7 +28,9 @@ import (
 	"veloera/service"
 	"veloera/setting"
 
+	"github.com/Calcium-Ion/go-epay/epay"
 	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
 )
 
@@ -47,36 +45,18 @@ type AmountRequest struct {
 	TopUpCode string `json:"top_up_code"`
 }
 
-// generateSign generates a signature string based on the provided parameters and key.
-// This function is specifically designed to be compatible with the "码支付AliMPay" project's
-// private signature algorithm.
-func generateSign(params map[string]string, key string) string {
-	// 1. Create a slice of keys
-	var keys []string
-	for k := range params {
-		keys = append(keys, k)
+func GetEpayClient() *epay.Client {
+	if setting.PayAddress == "" || setting.EpayId == "" || setting.EpayKey == "" {
+		return nil
 	}
-	// 2. Sort the keys alphabetically
-	sort.Strings(keys)
-
-	// 3. Build the string to be signed, filtering out empty values
-	var builder strings.Builder
-	for _, k := range keys {
-		if v := params[k]; v != "" {
-			if builder.Len() > 0 {
-				builder.WriteString("&")
-			}
-			builder.WriteString(k)
-			builder.WriteString("=")
-			builder.WriteString(v)
-		}
+	withUrl, err := epay.NewClient(&epay.Config{
+		PartnerID: setting.EpayId,
+		Key:       setting.EpayKey,
+	}, setting.PayAddress)
+	if err != nil {
+		return nil
 	}
-
-	// 4. Append the merchant key
-	signStr := builder.String() + key
-
-	// 5. Calculate MD5 hash
-	return fmt.Sprintf("%x", md5.Sum([]byte(signStr)))
+	return withUrl
 }
 
 func getPayMoney(amount int64, group string) float64 {
@@ -114,205 +94,210 @@ func RequestEpay(c *gin.Context) {
 	var req EpayRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "参数错误"})
+		c.JSON(200, gin.H{"message": "error", "data": "参数错误"})
 		return
 	}
 	if req.Amount < getMinTopup() {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getMinTopup())})
+		c.JSON(200, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getMinTopup())})
 		return
 	}
 
 	id := c.GetInt("id")
 	group, err := model.GetUserGroup(id, true)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "获取用户分组失败"})
+		c.JSON(200, gin.H{"message": "error", "data": "获取用户分组失败"})
 		return
 	}
 	payMoney := getPayMoney(req.Amount, group)
 	if payMoney < 0.01 {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
+		c.JSON(200, gin.H{"message": "error", "data": "充值金额过低"})
 		return
 	}
-
-	if setting.PayAddress == "" || setting.EpayId == "" || setting.EpayKey == "" {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "当前管理员未配置支付信息"})
-		return
+	payType := "wxpay"
+	if req.PaymentMethod == "zfb" {
+		payType = "alipay"
 	}
-
-	// Force payment type to alipay, as it's the only one supported by the server
-	payType := "alipay"
-
+	if req.PaymentMethod == "wx" {
+		req.PaymentMethod = "wxpay"
+		payType = "wxpay"
+	}
 	callBackAddress := service.GetCallbackAddress()
-	tradeNo := fmt.Sprintf("USR%dNO%s", id, fmt.Sprintf("%s%d", common.GetRandomString(6), time.Now().Unix()))
-
-	// Prepare parameters for signing, matching the "码支付AliMPay" protocol
-	params := map[string]string{
-		"pid":          setting.EpayId,
-		"type":         payType,
-		"out_trade_no": tradeNo,
-		"notify_url":   fmt.Sprintf("%s/api/user/epay/notify", callBackAddress),
-		"return_url":   fmt.Sprintf("%s/log", setting.ServerAddress),
-		"name":         fmt.Sprintf("TUC%d", req.Amount),
-		"money":        strconv.FormatFloat(payMoney, 'f', 2, 64),
-		"sitename":     "Veloera",
+	returnUrl, _ := url.Parse(setting.ServerAddress + "/log")
+	notifyUrl, _ := url.Parse(callBackAddress + "/api/user/epay/notify")
+	tradeNo := fmt.Sprintf("%s%d", common.GetRandomString(6), time.Now().Unix())
+	tradeNo = fmt.Sprintf("USR%dNO%s", id, tradeNo)
+	client := GetEpayClient()
+	if client == nil {
+		c.JSON(200, gin.H{"message": "error", "data": "当前管理员未配置支付信息"})
+		return
 	}
-
-	// Generate the signature using the correct algorithm
-	sign := generateSign(params, setting.EpayKey)
-
-	// Add signature to the parameters to be sent
-	params["sign"] = sign
-	params["sign_type"] = "MD5"
-
-	// Build the final URL for redirection
-	baseURL, _ := url.Parse(setting.PayAddress)
-	queryParams := url.Values{}
-	for k, v := range params {
-		queryParams.Add(k, v)
+	// Log all parameters before sending to epay for debugging
+	purchaseArgs := &epay.PurchaseArgs{
+		Type:           payType,
+		ServiceTradeNo: tradeNo,
+		Name:           fmt.Sprintf("TUC%d", req.Amount),
+		Money:          strconv.FormatFloat(payMoney, 'f', 2, 64),
+		Device:         epay.PC,
+		NotifyUrl:      notifyUrl,
+		ReturnUrl:      returnUrl,
 	}
-	baseURL.RawQuery = queryParams.Encode()
-	finalURL := baseURL.String()
+	log.Printf("--- Epay Debug Start ---")
+	log.Printf("PayAddress: %s", setting.PayAddress)
+	log.Printf("EpayId: %s", setting.EpayId)
+	// Mask key for security
+	maskedKey := setting.EpayKey
+	if len(maskedKey) > 4 {
+		maskedKey = maskedKey[:4] + "..."
+	}
+	log.Printf("EpayKey (masked): %s", maskedKey)
+	log.Printf("Request Params to be signed: %+v", purchaseArgs)
+	log.Printf("--- Epay Debug End ---")
 
-	// Record the top-up request in the database
+	uri, params, err := client.Purchase(purchaseArgs)
+	if err != nil {
+		c.JSON(200, gin.H{"message": "error", "data": "拉起支付失败"})
+		return
+	}
+	amount := req.Amount
+	if !common.DisplayInCurrencyEnabled {
+		dAmount := decimal.NewFromInt(int64(amount))
+		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+		amount = dAmount.Div(dQuotaPerUnit).IntPart()
+	}
 	topUp := &model.TopUp{
-		UserId:  id,
-		Amount:  req.Amount,
-		Money:   payMoney,
-		TradeNo: tradeNo,
-		Status:  "pending",
+		UserId:     id,
+		Amount:     amount,
+		Money:      payMoney,
+		TradeNo:    tradeNo,
+		CreateTime: time.Now().Unix(),
+		Status:     "pending",
 	}
 	err = topUp.Insert()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": err.Error()})
+		c.JSON(200, gin.H{"message": "error", "data": "创建订单失败"})
 		return
 	}
-
-	// Return the URL for the frontend to redirect
-	c.JSON(http.StatusOK, gin.H{
-		"message": "success",
-		"data":    finalURL,
-	})
+	c.JSON(200, gin.H{"message": "success", "data": params, "url": uri})
 }
 
-var (
-	notifyLock sync.Mutex
-)
+// tradeNo lock
+var orderLocks sync.Map
+var createLock sync.Mutex
 
-// EpayNotify handles the callback notification from the payment server.
-func EpayNotify(c *gin.Context) {
-	notifyLock.Lock()
-	defer notifyLock.Unlock()
-
-	// 1. Bind all query parameters into a map
-	queryMap := make(map[string]string)
-	for k, v := range c.Request.URL.Query() {
-		if len(v) > 0 {
-			queryMap[k] = v[0]
-		}
-	}
-
-	// 2. Check for essential parameters
-	if queryMap["trade_status"] == "" || queryMap["out_trade_no"] == "" {
-		log.Println("epay notify: missing essential parameters")
-		c.String(http.StatusBadRequest, "fail")
-		return
-	}
-
-	// 3. Separate the signature from the parameters to be verified
-	receivedSign, ok := queryMap["sign"]
+// LockOrder 尝试对给定订单号加锁
+func LockOrder(tradeNo string) {
+	lock, ok := orderLocks.Load(tradeNo)
 	if !ok {
-		log.Println("epay notify: sign parameter missing")
-		c.String(http.StatusBadRequest, "fail")
-		return
+		createLock.Lock()
+		defer createLock.Unlock()
+		lock, ok = orderLocks.Load(tradeNo)
+		if !ok {
+			lock = new(sync.Mutex)
+			orderLocks.Store(tradeNo, lock)
+		}
 	}
-	delete(queryMap, "sign")
-	delete(queryMap, "sign_type") // sign_type is not included in server's signature calculation
-
-	// 4. Verify the signature
-	expectedSign := generateSign(queryMap, setting.EpayKey)
-	if receivedSign != expectedSign {
-		log.Printf("epay notify: signature mismatch. expected=%s, received=%s", expectedSign, receivedSign)
-		c.String(http.StatusBadRequest, "fail")
-		return
-	}
-
-	// 5. Process the order if signature is valid
-	if queryMap["trade_status"] == "TRADE_SUCCESS" {
-		tradeNo := queryMap["out_trade_no"]
-		topUp, err := model.GetTopUpByTradeNo(tradeNo)
-		if err != nil {
-			log.Printf("get topup by trade no error: %v", err)
-			c.String(http.StatusInternalServerError, "fail")
-			return
-		}
-		if topUp.Status == "paid" {
-			c.String(http.StatusOK, "success")
-			return
-		}
-		topUp.Status = "paid"
-		err = topUp.Update()
-		if err != nil {
-			log.Printf("update topup error: %v", err)
-			c.String(http.StatusInternalServerError, "fail")
-			return
-		}
-		err = model.IncreaseUserQuota(topUp.UserId, int(topUp.Amount))
-		if err != nil {
-			log.Printf("increase user quota error: %v", err)
-			c.String(http.StatusInternalServerError, "fail")
-			return
-		}
-		model.RecordLog(topUp.UserId, model.LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %d", topUp.Amount))
-	}
-	c.String(http.StatusOK, "success")
+	lock.(*sync.Mutex).Lock()
 }
 
-func GetTopup(c *gin.Context) {
-	userId := c.GetInt("id")
-	p, _ := strconv.Atoi(c.Query("p"))
-	if p < 1 {
-		p = 1
+// UnlockOrder 释放给定订单号的锁
+func UnlockOrder(tradeNo string) {
+	lock, ok := orderLocks.Load(tradeNo)
+	if ok {
+		lock.(*sync.Mutex).Unlock()
 	}
-	topups, err := model.GetTopUpsByUserId(userId, (p-1)*common.ItemsPerPage, common.ItemsPerPage)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+}
+
+func EpayNotify(c *gin.Context) {
+	params := lo.Reduce(lo.Keys(c.Request.URL.Query()), func(r map[string]string, t string, i int) map[string]string {
+		r[t] = c.Request.URL.Query().Get(t)
+		return r
+	}, map[string]string{})
+	client := GetEpayClient()
+	if client == nil {
+		log.Println("易支付回调失败 未找到配置信息")
+		_, err := c.Writer.Write([]byte("fail"))
+		if err != nil {
+			log.Println("易支付回调写入失败")
+			return
+		}
+	}
+	verifyInfo, err := client.Verify(params)
+	if err == nil && verifyInfo.VerifyStatus {
+		_, err := c.Writer.Write([]byte("success"))
+		if err != nil {
+			log.Println("易支付回调写入失败")
+		}
+	} else {
+		_, err := c.Writer.Write([]byte("fail"))
+		if err != nil {
+			log.Println("易支付回调写入失败")
+		}
+		log.Println("易支付回调签名验证失败")
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    topups,
-	})
+
+	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
+		log.Println(verifyInfo)
+		LockOrder(verifyInfo.ServiceTradeNo)
+		defer UnlockOrder(verifyInfo.ServiceTradeNo)
+		topUp := model.GetTopUpByTradeNo(verifyInfo.ServiceTradeNo)
+		if topUp == nil {
+			log.Printf("易支付回调未找到订单: %v", verifyInfo)
+			return
+		}
+		if topUp.Status == "pending" {
+			topUp.Status = "success"
+			err := topUp.Update()
+			if err != nil {
+				log.Printf("易支付回调更新订单失败: %v", topUp)
+				return
+			}
+			//user, _ := model.GetUserById(topUp.UserId, false)
+			//user.Quota += topUp.Amount * 500000
+			dAmount := decimal.NewFromInt(int64(topUp.Amount))
+			dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+			quotaToAdd := int(dAmount.Mul(dQuotaPerUnit).IntPart())
+			err = model.IncreaseUserQuota(topUp.UserId, quotaToAdd, true)
+			if err != nil {
+				log.Printf("易支付回调更新用户失败: %v", topUp)
+				return
+			}
+			log.Printf("易支付回调更新用户成功 %v", topUp)
+			model.RecordLog(topUp.UserId, model.LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", common.LogQuota(quotaToAdd), topUp.Money))
+
+			// 处理返佣逻辑
+			err = model.ProcessRebate(topUp.UserId, quotaToAdd, "充值")
+			if err != nil {
+				log.Printf("处理充值返佣失败: %v", err)
+			}
+		}
+	} else {
+		log.Printf("易支付异常回调: %v", verifyInfo)
+	}
 }
 
-func GetMinAmount(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    getMinTopup(),
-	})
-}
-
-func GetAmount(c *gin.Context) {
+func RequestAmount(c *gin.Context) {
 	var req AmountRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "参数错误"})
+		c.JSON(200, gin.H{"message": "error", "data": "参数错误"})
+		return
+	}
+
+	if req.Amount < getMinTopup() {
+		c.JSON(200, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getMinTopup())})
 		return
 	}
 	id := c.GetInt("id")
 	group, err := model.GetUserGroup(id, true)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "获取用户分组失败"})
+		c.JSON(200, gin.H{"message": "error", "data": "获取用户分组失败"})
 		return
 	}
 	payMoney := getPayMoney(req.Amount, group)
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    payMoney,
-	})
+	if payMoney <= 0.01 {
+		c.JSON(200, gin.H{"message": "error", "data": "充值金额过低"})
+		return
+	}
+	c.JSON(200, gin.H{"message": "success", "data": strconv.FormatFloat(payMoney, 'f', 2, 64)})
 }
