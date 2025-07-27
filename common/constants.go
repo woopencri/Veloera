@@ -128,6 +128,10 @@ var CheckInMaxQuota = 0
 var RebateEnabled = false
 var RebatePercentage = 0.0
 
+// 反向代理设置
+var ReverseProxyEnabled = false
+var ReverseProxyProvider = "nginx"
+
 //var RootUserEmail = ""
 
 var IsMasterNode bool

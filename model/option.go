@@ -158,6 +158,10 @@ func InitOptionMap() {
 	common.OptionMap["fallback_input_ratio"] = ""
 	common.OptionMap["fallback_completion_ratio"] = ""
 
+	// Add reverse proxy configuration options
+	common.OptionMap["ReverseProxyEnabled"] = "false"
+	common.OptionMap["ReverseProxyProvider"] = "nginx"
+
 	// 自动添加所有注册的模型配置
 	modelConfigs := config.GlobalConfig.ExportAllConfigs()
 	for k, v := range modelConfigs {
@@ -309,6 +313,8 @@ func updateOptionMap(key string, value string) (err error) {
 			setting.SafeCheckExemptEnabled = boolValue
 		case "SMTPSSLEnabled":
 			common.SMTPSSLEnabled = boolValue
+		case "ReverseProxyEnabled":
+			common.ReverseProxyEnabled = boolValue
 		}
 	}
 	switch key {
@@ -429,6 +435,8 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.StreamCacheQueueLength, _ = strconv.Atoi(value)
 	case "RebatePercentage":
 		common.RebatePercentage, _ = strconv.ParseFloat(value, 64)
+	case "ReverseProxyProvider":
+		common.ReverseProxyProvider = value
 	}
 	return err
 }
