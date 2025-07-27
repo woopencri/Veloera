@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Button,
   Col,
@@ -52,6 +52,31 @@ export default function ModelCommonRatioSettings(props) {
     fallback_completion_ratio: '',
   });
   const { t } = useTranslation();
+  const refForm = useRef();
+
+  function handleFieldChange(fieldName) {
+    return (value) => {
+      if (fieldName === 'fallback_single_price') {
+        setInputs((inputs) => ({
+          ...inputs,
+          fallback_single_price: typeof value === 'number' ? String(value) : value,
+          fallback_input_ratio: value ? '' : inputs.fallback_input_ratio,
+          fallback_completion_ratio: value ? '' : inputs.fallback_completion_ratio,
+        }));
+      } else if (fieldName === 'fallback_input_ratio' || fieldName === 'fallback_completion_ratio') {
+        setInputs((inputs) => ({
+          ...inputs,
+          [fieldName]: typeof value === 'number' ? String(value) : value,
+          fallback_single_price: value ? '' : inputs.fallback_single_price,
+        }));
+      } else {
+        setInputs((inputs) => ({ 
+          ...inputs, 
+          [fieldName]: typeof value === 'number' ? String(value) : value 
+        }));
+      }
+    };
+  }
 
   const presetSources = [
     { value: 'flexible', label: '通用（默认，推荐）' },
@@ -282,23 +307,33 @@ export default function ModelCommonRatioSettings(props) {
   };
 
   useEffect(() => {
-    const currentInputs = {};
+    const currentInputs = {
+      fallback_pricing_enabled: false,
+      fallback_single_price: '',
+      fallback_input_ratio: '',
+      fallback_completion_ratio: '',
+    };
+    
     for (let key in props.options) {
-      if (Object.keys(inputs).includes(key)) {
+      if (Object.keys(currentInputs).includes(key)) {
         if (key === 'fallback_pricing_enabled') {
           currentInputs[key] = props.options[key] === 'true';
         } else {
-          currentInputs[key] = props.options[key];
+          currentInputs[key] = props.options[key] || '';
         }
       }
     }
     setInputs(currentInputs);
+    if (refForm.current) {
+      refForm.current.setValues(currentInputs);
+    }
   }, [props.options]);
 
   return (
     <Spin spinning={loading}>
       <Form
         values={inputs}
+        getFormApi={(formAPI) => (refForm.current = formAPI)}
         style={{ marginBottom: 15 }}
       >
         <Form.Section text={t('其他倍率设置')}>
@@ -325,7 +360,7 @@ export default function ModelCommonRatioSettings(props) {
               <Form.Switch
                 label={t('启用兜底倍率')}
                 field="fallback_pricing_enabled"
-                onChange={(checked) => setInputs({...inputs, fallback_pricing_enabled: checked})}
+                onChange={handleFieldChange('fallback_pricing_enabled')}
               />
             </Col>
           </Row>
@@ -339,7 +374,7 @@ export default function ModelCommonRatioSettings(props) {
                   min={0}
                   step={0.001}
                   disabled={inputs.fallback_input_ratio || inputs.fallback_completion_ratio}
-                  onChange={(value) => handleFallbackPriceChange('single', value)}
+                  onChange={handleFieldChange('fallback_single_price')}
                 />
               </Col>
               <Col span={6}>
@@ -350,7 +385,7 @@ export default function ModelCommonRatioSettings(props) {
                   min={0}
                   step={0.1}
                   disabled={inputs.fallback_single_price}
-                  onChange={(value) => handleFallbackPriceChange('input', value)}
+                  onChange={handleFieldChange('fallback_input_ratio')}
                 />
               </Col>
               <Col span={6}>
@@ -361,7 +396,7 @@ export default function ModelCommonRatioSettings(props) {
                   min={0}
                   step={0.1}
                   disabled={inputs.fallback_single_price}
-                  onChange={(value) => handleFallbackPriceChange('completion', value)}
+                  onChange={handleFieldChange('fallback_completion_ratio')}
                 />
               </Col>
               <Col span={6}>
