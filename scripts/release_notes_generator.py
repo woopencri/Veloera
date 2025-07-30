@@ -17,6 +17,7 @@ def get_last_tag_and_commits():
     """
     try:
         # 获取所有tag，并按版本号降序排序
+        # -version:refname 确保 v1.0.0 在 v0.9.0 之前，v1.0.1 在 v1.0.0 之前
         tags_output = subprocess.check_output("git tag --sort=-version:refname", shell=True).decode('utf-8').strip()
         tags = tags_output.split('\n')
 
@@ -32,22 +33,13 @@ def get_last_tag_and_commits():
                 if current_tag_index + 1 < len(tags):
                     previous_tag = tags[current_tag_index + 1]
             except ValueError:
-                # current_tag not in tags list, this shouldn't happen if tags[0] is current_tag
-                pass
+                pass # current_tag not in tags list, this shouldn't happen if tags[0] is current_tag
         
         print(f"Current tag: {current_tag}")
         print(f"Previous tag: {previous_tag if previous_tag else 'None'}")
 
         commit_range = f"{previous_tag}..{current_tag}" if previous_tag else current_tag
         
-        # 获取从上一个tag到当前tag的所有commit
-        # %H: commit hash
-        # %s: subject (commit message first line)
-        # %b: body (commit message full body)
-        # %an: author name
-        # %ae: author email
-        # --no-merges: 排除合并提交
-        # --grep="^Release" --grep="^Merge branch" --invert-grep: 排除以 "Release" 或 "Merge branch" 开头的提交
         commits_output = subprocess.check_output(
             f'git log {commit_range} --pretty=format:"%H%n%s%n%b%n%an%n%ae%n---COMMIT-END---" --no-merges --grep="^Release" --grep="^Merge branch" --invert-grep',
             shell=True
@@ -60,15 +52,14 @@ def get_last_tag_and_commits():
             if not commit_block.strip():
                 continue
             lines = commit_block.strip().split('\n')
-            if len(lines) >= 4: # Now expecting 4 lines for hash, subject, body, author, email
+            if len(lines) >= 4: # Expecting 4 lines for hash, subject, body, author, email
                 commit_hash = lines[0]
                 subject = lines[1]
-                body = "\n".join(lines[2:-2]) if len(lines) > 4 else "" # Body is everything between subject and author
+                body = "\n".join(lines[2:-2]) if len(lines) > 4 else ""
                 author_name = lines[-2]
                 author_email = lines[-1]
                 
-                # Try to determine category based on convention
-                category = "Other" # Default to 'Other' if no specific match
+                category = "Other"
                 subject_lower = subject.lower()
 
                 if subject_lower.startswith("feat"):
@@ -245,9 +236,10 @@ def get_github_username_from_email(email):
         return match.group(1)
     return None
 
-def generate_contributors_section(commits):
+def generate_contributors_section(commits, max_columns=7):
     """
-    生成贡献者部分，包括头像、用户名和贡献数量的 HTML 表格。
+    生成贡献者部分，使用 Markdown 表格。
+    尝试创建 3 行的表格：头像，用户名，贡献数。
     """
     contributor_counts = defaultdict(int)
     contributor_info = {} # Stores {author_email: {name, github_username, avatar_url}}
@@ -259,14 +251,15 @@ def generate_contributors_section(commits):
 
         if author_email not in contributor_info:
             github_username = get_github_username_from_email(author_email)
-            avatar_url = "https://github.com/github.png?size=60" # Default generic avatar
+            # Use a smaller size for avatars in tables, as they'll be inline
+            avatar_url = "https://github.com/github.png?size=40" # Default generic avatar
             
             if github_username:
-                avatar_url = f"https://github.com/{github_username}.png?size=60"
+                avatar_url = f"https://github.com/{github_username}.png?size=40"
             
             contributor_info[author_email] = {
                 "name": author_name,
-                "github_username": github_username if github_username else author_name, # Use author_name as fallback display name
+                "github_username": github_username, # Keep original if not from GitHub email
                 "avatar_url": avatar_url
             }
 
@@ -276,32 +269,52 @@ def generate_contributors_section(commits):
     if not sorted_contributors:
         return ""
 
-    contributors_html = "## Contributors\n\nSpecial thanks to:\n\n"
-    contributors_html += '<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-top: 20px;">\n'
+    contributors_markdown = "## Contributors\n\nSpecial thanks to:\n\n"
 
-    # Max 7 columns per row (using flex-basis for roughly 1/7 width)
-    # The actual number of columns will adapt based on the gap and container width,
-    # but we aim for a visually appealing row.
-    
-    # We will build up the HTML for each contributor
-    for email, count in sorted_contributors:
-        info = contributor_info[email]
-        display_name = info["github_username"] if info["github_username"] else info["name"]
+    # Split contributors into chunks of max_columns
+    for i in range(0, len(sorted_contributors), max_columns):
+        chunk = sorted_contributors[i:i + max_columns]
         
-        contributors_html += f"""
-    <div style="flex: 0 0 calc(100% / 7 - 20px); text-align: center; margin-bottom: 20px;">
-        <img src="{info['avatar_url']}" alt="{display_name}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
-        <p style="margin: 5px 0 0; font-weight: bold;">{display_name}</p>
-        <p style="margin: 0; font-size: 0.9em;">{count} commit{'s' if count > 1 else ''}</p>
-    </div>
-"""
-    contributors_html += '</div>\n\n'
-    return contributors_html
+        # Header row for images
+        image_row = "|"
+        # Header row for separator
+        separator_row = "|"
+        # Header row for names
+        name_row = "|"
+        # Header row for commit counts
+        count_row = "|"
+
+        for email, count in chunk:
+            info = contributor_info[email]
+            display_name = info["github_username"] if info["github_username"] else info["name"]
+            
+            # Markdown table cells cannot directly control image styling (e.g., border-radius for circular)
+            # They also don't handle multi-line content gracefully without `<br>` or `\`.
+            # We'll put name and count on separate "rows" of the Markdown table.
+            
+            image_row += f" ![Avatar]({info['avatar_url']}) |"
+            separator_row += " :----------: |" # Centered alignment
+            name_row += f" **{display_name}** |"
+            count_row += f" {count} commit{'s' if count > 1 else ''} |"
+
+        # Fill remaining columns if chunk is smaller than max_columns
+        for _ in range(max_columns - len(chunk)):
+            image_row += " |"
+            separator_row += " |"
+            name_row += " |"
+            count_row += " |"
+
+        contributors_markdown += image_row + "\n"
+        contributors_markdown += separator_row + "\n"
+        contributors_markdown += name_row + "\n"
+        contributors_markdown += count_row + "\n\n" # Two newlines to separate tables if multiple chunks
+
+    return contributors_markdown
 
 def format_release_notes(tag_name, ai_summary, all_commits):
     """格式化发布说明."""
-    release_notes = f"## Release {tag_name}\n\n"
-    release_notes += f"{ai_summary}\n\n"
+    release_notes = f"## Release {tag_name}\n\n" # 标题后两个空行
+    release_notes += f"{ai_summary}\n\n" # 摘要后两个空行
 
     # Add Contributors section at the top, after the main summary
     contributors_section = generate_contributors_section(all_commits)
@@ -324,7 +337,7 @@ def format_release_notes(tag_name, ai_summary, all_commits):
 
     for category, commit_list in categorized_commits.items():
         if commit_list:
-            release_notes += f"### {category}\n\n"
+            release_notes += f"### {category}\n\n" # 每个分类标题后两个空行
             ai_items = generate_ai_formatted_items(category, commit_list)
             release_notes += ai_items
             
@@ -354,9 +367,6 @@ def main():
     print(f"Release notes for {tag_name} saved to {output_filename}")
     
     # Set output for GitHub Actions using GITHUB_OUTPUT environment file
-    # This section will only run correctly within GitHub Actions.
-    # When running locally, GITHUB_OUTPUT environment variable is not set,
-    # leading to KeyError.
     if 'GITHUB_OUTPUT' in os.environ:
         with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
             f.write(f"release_notes_file={output_filename}\n")
