@@ -238,7 +238,7 @@ def get_github_username_from_email(email):
 
 def generate_contributors_section(commits, max_columns=7):
     """
-    生成贡献者部分，使用 Markdown 表格。
+    生成贡献者部分，使用 Markdown 表格，精确到只有实际贡献者的列数。
     尝试创建 3 行的表格：头像，用户名，贡献数。
     """
     contributor_counts = defaultdict(int)
@@ -251,7 +251,6 @@ def generate_contributors_section(commits, max_columns=7):
 
         if author_email not in contributor_info:
             github_username = get_github_username_from_email(author_email)
-            # Use a smaller size for avatars in tables, as they'll be inline
             avatar_url = "https://github.com/github.png?size=40" # Default generic avatar
             
             if github_username:
@@ -275,39 +274,26 @@ def generate_contributors_section(commits, max_columns=7):
     for i in range(0, len(sorted_contributors), max_columns):
         chunk = sorted_contributors[i:i + max_columns]
         
-        # Header row for images
-        image_row = "|"
-        # Header row for separator
-        separator_row = "|"
-        # Header row for names
-        name_row = "|"
-        # Header row for commit counts
-        count_row = "|"
+        # Initialize rows for the current chunk
+        image_row_cells = []
+        separator_row_cells = []
+        name_row_cells = []
+        count_row_cells = []
 
         for email, count in chunk:
             info = contributor_info[email]
             display_name = info["github_username"] if info["github_username"] else info["name"]
             
-            # Markdown table cells cannot directly control image styling (e.g., border-radius for circular)
-            # They also don't handle multi-line content gracefully without `<br>` or `\`.
-            # We'll put name and count on separate "rows" of the Markdown table.
-            
-            image_row += f" ![Avatar]({info['avatar_url']}) |"
-            separator_row += " :----------: |" # Centered alignment
-            name_row += f" **{display_name}** |"
-            count_row += f" {count} commit{'s' if count > 1 else ''} |"
+            image_row_cells.append(f"![Avatar]({info['avatar_url']}) ") # Space before | for better rendering
+            separator_row_cells.append(" :----------: ") # Centered alignment
+            name_row_cells.append(f" **{display_name}** ")
+            count_row_cells.append(f" {count} commit{'s' if count > 1 else ''} ")
 
-        # Fill remaining columns if chunk is smaller than max_columns
-        for _ in range(max_columns - len(chunk)):
-            image_row += " |"
-            separator_row += " |"
-            name_row += " |"
-            count_row += " |"
-
-        contributors_markdown += image_row + "\n"
-        contributors_markdown += separator_row + "\n"
-        contributors_markdown += name_row + "\n"
-        contributors_markdown += count_row + "\n\n" # Two newlines to separate tables if multiple chunks
+        # Join cells with "|" and add leading/trailing "|" for the table
+        contributors_markdown += "|" + "|".join(image_row_cells) + "|\n"
+        contributors_markdown += "|" + "|".join(separator_row_cells) + "|\n"
+        contributors_markdown += "|" + "|".join(name_row_cells) + "|\n"
+        contributors_markdown += "|" + "|".join(count_row_cells) + "|\n\n" # Two newlines to separate tables if multiple chunks
 
     return contributors_markdown
 
