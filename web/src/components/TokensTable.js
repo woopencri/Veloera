@@ -217,42 +217,40 @@ const TokensTable = () => {
             >
               {t('复制')}
             </Button>
-            <SplitButtonGroup
-              style={{ marginRight: 1 }}
-              aria-label={t('项目操作按钮组')}
-            >
-              <Button
-                theme='light'
-                style={{ color: 'rgba(var(--semi-teal-7), 1)' }}
-                onClick={() => {
-                  if (chatsArray.length === 0) {
-                    showError(t('请联系管理员配置聊天链接'));
-                  } else {
+            {chatsArray.length > 0 && (
+              <SplitButtonGroup
+                style={{ marginRight: 1 }}
+                aria-label={t('项目操作按钮组')}
+              >
+                <Button
+                  theme='light'
+                  style={{ color: 'rgba(var(--semi-teal-7), 1)' }}
+                  onClick={() => {
                     onOpenLink(
                       'default',
                       chats[0][Object.keys(chats[0])[0]],
                       record,
                     );
-                  }
-                }}
-              >
-                {t('聊天')}
-              </Button>
-              <Dropdown
-                trigger='click'
-                position='bottomRight'
-                menu={chatsArray}
-              >
-                <Button
-                  style={{
-                    padding: '8px 4px',
-                    color: 'rgba(var(--semi-teal-7), 1)',
                   }}
-                  type='primary'
-                  icon={<IconTreeTriangleDown />}
-                ></Button>
-              </Dropdown>
-            </SplitButtonGroup>
+                >
+                  {t('聊天')}
+                </Button>
+                <Dropdown
+                  trigger='click'
+                  position='bottomRight'
+                  menu={chatsArray}
+                >
+                  <Button
+                    style={{
+                      padding: '8px 4px',
+                      color: 'rgba(var(--semi-teal-7), 1)',
+                    }}
+                    type='primary'
+                    icon={<IconTreeTriangleDown />}
+                  ></Button>
+                </Dropdown>
+              </SplitButtonGroup>
+            )}
             <Popconfirm
               title={t('确定是否要删除此令牌？')}
               content={t('此修改将不可逆')}
