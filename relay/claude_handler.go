@@ -48,6 +48,27 @@ func getAndValidateClaudeRequest(c *gin.Context) (textRequest *dto.ClaudeRequest
 	return textRequest, nil
 }
 
+func prependClaudeSystemPromptIfNeeded(c *gin.Context, textRequest *dto.ClaudeRequest) {
+	channelSystemPrompt := c.GetString("system_prompt")
+	if channelSystemPrompt == "" {
+		return
+	}
+	
+	// Prepend channel system prompt to Claude's system field
+	if textRequest.System != nil {
+		// If user already has a system prompt, prepend channel's system prompt
+		if existingSystem, ok := textRequest.System.(string); ok {
+			textRequest.System = channelSystemPrompt + "\n\n" + existingSystem
+		} else {
+			// If system is not a string, just replace it with channel system prompt
+			textRequest.System = channelSystemPrompt
+		}
+	} else {
+		// If no existing system prompt, set channel's system prompt
+		textRequest.System = channelSystemPrompt
+	}
+}
+
 func ClaudeHelper(c *gin.Context) (claudeError *dto.ClaudeErrorWithStatusCode) {
 
 	relayInfo := relaycommon.GenRelayInfoClaude(c)
@@ -57,6 +78,9 @@ func ClaudeHelper(c *gin.Context) (claudeError *dto.ClaudeErrorWithStatusCode) {
 	if err != nil {
 		return service.ClaudeErrorWrapperLocal(err, "invalid_claude_request", http.StatusBadRequest)
 	}
+
+	// Prepend channel system prompt if configured
+	prependClaudeSystemPromptIfNeeded(c, textRequest)
 
 	if textRequest.Stream {
 		relayInfo.IsStream = true
