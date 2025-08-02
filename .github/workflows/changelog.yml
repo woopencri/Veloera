@@ -56,4 +56,4 @@ jobs:
 
           git add "$RELEASE_FILE"
           git commit -m "docs(release): Add release notes for $TAG_NAME" || echo "No changes to commit"
-          git push
+          git push origin HEAD:main
