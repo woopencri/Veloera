@@ -54,6 +54,7 @@ type Channel struct {
 	Setting           *string `json:"setting" gorm:"type:text"`
 	ParamOverride     *string `json:"param_override" gorm:"type:text"`
 	ModelPrefix       *string `json:"model_prefix" gorm:"type:varchar(64);default:''"`
+	SystemPrompt      *string `json:"system_prompt" gorm:"type:text"`
 }
 
 func (channel *Channel) GetModels() []string {
@@ -515,6 +516,13 @@ func (channel *Channel) GetModelPrefix() string {
 		return ""
 	}
 	return *channel.ModelPrefix
+}
+
+func (channel *Channel) GetSystemPrompt() string {
+	if channel.SystemPrompt == nil {
+		return ""
+	}
+	return *channel.SystemPrompt
 }
 
 func (channel *Channel) GetSetting() map[string]interface{} {

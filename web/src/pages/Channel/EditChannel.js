@@ -308,6 +308,7 @@ const EditChannel = (props) => {
     model_prefix: '', // Added model_prefix
     setting: '', // Added setting
     param_override: '', // Added param_override
+    system_prompt: '', // Added system_prompt
   };
 
   const [batch, setBatch] = useState(false);
@@ -554,6 +555,12 @@ const EditChannel = (props) => {
          }
       } else {
           data.param_override = ''; // Ensure it's an empty string if null
+      }
+
+      if (data.system_prompt !== '' && data.system_prompt !== null) { // Handle null system_prompt
+        // Keep as is since it's already a string, no need to parse JSON
+      } else {
+          data.system_prompt = ''; // Ensure it's an empty string if null
       }
 
 
@@ -1839,6 +1846,19 @@ const EditChannel = (props) => {
           >
             {t('填入模板')}
           </Typography.Text>
+          <div style={{ marginTop: 10 }}>
+            <Typography.Text strong>{t('系统提示词设置')}：</Typography.Text>
+          </div>
+          <TextArea
+            placeholder={t('此项可选，用于为该渠道设置系统提示词，将会在用户请求的系统提示词前追加')}
+            name='system_prompt'
+            onChange={(value) => {
+              handleInputChange('system_prompt', value);
+            }}
+            autosize={{ minRows: 2 }}
+            value={inputs.system_prompt}
+            autoComplete='new-password'
+          />
         </Spin>
       </SideSheet>
     </>

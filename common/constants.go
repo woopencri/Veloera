@@ -97,6 +97,7 @@ var GitHubClientId = ""
 var GitHubClientSecret = ""
 var LinuxDOClientId = ""
 var LinuxDOClientSecret = ""
+var LinuxDOMinimumTrustLevel = 0
 
 var WeChatServerAddress = ""
 var WeChatServerToken = ""
@@ -127,6 +128,10 @@ var CheckInMaxQuota = 0
 // 返佣设置
 var RebateEnabled = false
 var RebatePercentage = 0.0
+
+// 反向代理设置
+var ReverseProxyEnabled = false
+var ReverseProxyProvider = "nginx"
 
 //var RootUserEmail = ""
 
@@ -244,7 +249,6 @@ const (
 	ChannelTypeTencent        = 23
 	ChannelTypeGemini         = 24
 	ChannelTypeMoonshot       = 25
-	ChannelTypeZhipu_v4       = 26
 	ChannelTypePerplexity     = 27
 	ChannelTypeLingYiWanWu    = 31
 	ChannelTypeAws            = 33

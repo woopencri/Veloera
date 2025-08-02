@@ -32,6 +32,7 @@ import {
   Popover,
   ImagePreview,
   Button,
+  Switch,
 } from '@douyinfe/semi-ui';
 import {
   IconMore,
@@ -41,6 +42,7 @@ import {
 } from '@douyinfe/semi-icons';
 import { UserContext } from '../context/User/index.js';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
+import Decimal from 'decimal.js';
 
 const ModelPricing = () => {
   const { t } = useTranslation();
@@ -50,6 +52,8 @@ const ModelPricing = () => {
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState('default');
+  const [showRatio, setShowRatio] = useState(false);
+  const [hideUnavailable, setHideUnavailable] = useState(true);
 
   const rowSelection = useMemo(
     () => ({
@@ -259,13 +263,8 @@ const ModelPricing = () => {
         let content = text;
         if (record.quota_type === 0) {
           // 这里的 *2 是因为 1倍率=0.002刀，请勿删除
-          let inputRatioPrice =
-            record.model_ratio * 2 * groupRatio[selectedGroup];
-          let completionRatioPrice =
-            record.model_ratio *
-            record.completion_ratio *
-            2 *
-            groupRatio[selectedGroup];
+          let inputRatioPrice = new Decimal(record.model_ratio).mul(2).mul(groupRatio[selectedGroup]).toFixed(3);
+          let completionRatioPrice = new Decimal(record.model_ratio).mul(record.completion_ratio).mul(2).mul(groupRatio[selectedGroup]).toFixed(3);
           content = (
             <>
               <Text>
@@ -278,7 +277,7 @@ const ModelPricing = () => {
             </>
           );
         } else {
-          let price = parseFloat(text) * groupRatio[selectedGroup];
+          let price = new Decimal(text).mul(groupRatio[selectedGroup]).toFixed(3);
           content = (
             <>
               {t('模型价格')}：${price}
@@ -411,15 +410,36 @@ const ModelPricing = () => {
             onClick={() => {
               copyText(selectedRowKeys);
             }}
-            disabled={selectedRowKeys == ''}
+            disabled={selectedRowKeys.length === 0}
           >
             {t('复制选中模型')}
           </Button>
+          <Space style={{ marginLeft: 16, alignItems: 'center' }}>
+            <span>{t('显示倍率')}:</span>
+            <Switch
+              checked={showRatio}
+              onChange={setShowRatio}
+            />
+          </Space>
+          <Space style={{ marginLeft: 16, alignItems: 'center' }}>
+            <span>{t('隐藏不可用模型')}:</span>
+            <Switch
+              checked={hideUnavailable}
+              onChange={setHideUnavailable}
+            />
+          </Space>
         </Space>
         <Table
           style={{ marginTop: 5 }}
-          columns={columns}
-          dataSource={models}
+          columns={columns.filter(column => {
+            if (column.dataIndex === 'available' && hideUnavailable) return false;
+            if (column.dataIndex === 'model_ratio' && !showRatio) return false;
+            return true;
+          })}
+          dataSource={models.filter(model => {
+            if (hideUnavailable && !model.enable_groups.includes(selectedGroup)) return false;
+            return true;
+          })}
           loading={loading}
           pagination={{
             formatPageText: (page) =>

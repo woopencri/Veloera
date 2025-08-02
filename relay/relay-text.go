@@ -96,6 +96,45 @@ func getAndValidateTextRequest(c *gin.Context, relayInfo *relaycommon.RelayInfo)
 	return textRequest, nil
 }
 
+func prependSystemPromptIfNeeded(c *gin.Context, textRequest *dto.GeneralOpenAIRequest, relayInfo *relaycommon.RelayInfo) {
+	channelSystemPrompt := c.GetString("system_prompt")
+	if channelSystemPrompt == "" {
+		return
+	}
+	
+	// Only process chat completions
+	if relayInfo.RelayMode != relayconstant.RelayModeChatCompletions {
+		return
+	}
+	
+	// Find existing system message (should be first if exists)
+	var existingSystemMessage *dto.Message
+	
+	for i, message := range textRequest.Messages {
+		if message.Role == "system" {
+			existingSystemMessage = &textRequest.Messages[i]
+			break
+		}
+	}
+	
+	// Prepend channel system prompt
+	if existingSystemMessage != nil {
+		// If user already has a system message, prepend channel's system prompt
+		existingContent := existingSystemMessage.StringContent()
+		newSystemContent := channelSystemPrompt + "\n\n" + existingContent
+		newContentBytes, _ := json.Marshal(newSystemContent)
+		existingSystemMessage.Content = newContentBytes
+	} else {
+		// If no existing system message, create a new one and prepend to messages
+		newContentBytes, _ := json.Marshal(channelSystemPrompt)
+		newSystemMessage := dto.Message{
+			Role:    "system",
+			Content: newContentBytes,
+		}
+		textRequest.Messages = append([]dto.Message{newSystemMessage}, textRequest.Messages...)
+	}
+}
+
 func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 
 	relayInfo := relaycommon.GenRelayInfo(c)
@@ -106,6 +145,9 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		common.LogError(c, fmt.Sprintf("getAndValidateTextRequest failed: %s", err.Error()))
 		return service.OpenAIErrorWrapperLocal(err, "invalid_text_request", http.StatusBadRequest)
 	}
+
+	// Prepend channel system prompt if configured
+	prependSystemPromptIfNeeded(c, textRequest, relayInfo)
 
 	tokenGroup := c.GetString("token_group")
 	if setting.ShouldCheckPromptSensitiveWithGroup(tokenGroup) {
