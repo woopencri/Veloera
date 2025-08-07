@@ -101,22 +101,22 @@ func prependSystemPromptIfNeeded(c *gin.Context, textRequest *dto.GeneralOpenAIR
 	if channelSystemPrompt == "" {
 		return
 	}
-	
+
 	// Only process chat completions
 	if relayInfo.RelayMode != relayconstant.RelayModeChatCompletions {
 		return
 	}
-	
+
 	// Find existing system message (should be first if exists)
 	var existingSystemMessage *dto.Message
-	
+
 	for i, message := range textRequest.Messages {
 		if message.Role == "system" {
 			existingSystemMessage = &textRequest.Messages[i]
 			break
 		}
 	}
-	
+
 	// Prepend channel system prompt
 	if existingSystemMessage != nil {
 		// If user already has a system message, prepend channel's system prompt
@@ -313,8 +313,16 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		default:
 			usage, openaiErr = adaptor.DoResponse(c, httpResp, relayInfo)
 		}
+		// 对于伪流式响应，如果没有错误则标记响应已写入
+		if openaiErr == nil {
+			c.Set("response_written", true)
+		}
 	} else {
 		usage, openaiErr = adaptor.DoResponse(c, httpResp, relayInfo)
+		// 对于非流式响应，如果没有错误则标记响应已写入
+		if openaiErr == nil {
+			c.Set("response_written", true)
+		}
 	}
 	if openaiErr != nil {
 		if pseudoStream && stopHeartbeat != nil {

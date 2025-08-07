@@ -19,7 +19,6 @@ package relay
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
 	"veloera/common"
@@ -29,6 +28,8 @@ import (
 	"veloera/relay/helper"
 	"veloera/service"
 	"veloera/setting"
+
+	"github.com/gin-gonic/gin"
 )
 
 func getAndValidAudioRequest(c *gin.Context, info *relaycommon.RelayInfo) (*dto.AudioRequest, error) {
@@ -148,6 +149,8 @@ func AudioHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		return openaiErr
 	}
 
+	// 标记响应已写入，用于空回复检测
+	c.Set("response_written", true)
 	postConsumeQuota(c, relayInfo, usage.(*dto.Usage), preConsumedQuota, userQuota, priceData, "")
 
 	return nil

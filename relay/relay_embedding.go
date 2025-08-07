@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"veloera/common"
 	"veloera/dto"
@@ -28,6 +27,8 @@ import (
 	relayconstant "veloera/relay/constant"
 	"veloera/relay/helper"
 	"veloera/service"
+
+	"github.com/gin-gonic/gin"
 )
 
 func getEmbeddingPromptToken(embeddingRequest dto.EmbeddingRequest) int {
@@ -127,6 +128,8 @@ func EmbeddingHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) 
 		service.ResetStatusCode(openaiErr, statusCodeMappingStr)
 		return openaiErr
 	}
+	// 标记响应已写入，用于空回复检测
+	c.Set("response_written", true)
 	postConsumeQuota(c, relayInfo, usage.(*dto.Usage), preConsumedQuota, userQuota, priceData, "")
 	return nil
 }

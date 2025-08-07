@@ -40,6 +40,10 @@ export default function SettingGlobalModel(props) {
     'global.rate_limit_exempt_group': 'bulk-ok',
     'global.safe_check_exempt_enabled': false,
     'global.safe_check_exempt_group': 'nsfw-ok',
+    'global.auto_retry_enabled': false,
+    'global.auto_retry_count': 3,
+    'global.auto_retry_force_channel_switch': false,
+    'global.auto_retry_status_codes': '5xx,4xx',
     'general_setting.ping_interval_enabled': false,
     'general_setting.ping_interval_seconds': 60,
   });
@@ -129,7 +133,7 @@ export default function SettingGlobalModel(props) {
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
-                  label={t('是否允许沉浸式翻译类插件')}
+                  label={t('阻止沉浸式翻译类插件')}
                   field={'global.block_browser_extension_enabled'}
                   onChange={(value) =>
                     setInputs({
@@ -138,7 +142,7 @@ export default function SettingGlobalModel(props) {
                     })
                   }
                   extraText={
-                    '是否允许浏览器插件请求, 请注意此判断逻辑不可靠, 并可能误杀!'
+                    '是否阻止浏览器插件请求, 请注意此判断逻辑不可靠, 并可能误杀!'
                   }
                 />
               </Col>
@@ -196,6 +200,78 @@ export default function SettingGlobalModel(props) {
                       })
                     }
                     disabled={!inputs['global.safe_check_exempt_enabled']}
+                  />
+                </Col>
+              </Row>
+            </Form.Section>
+
+            <Form.Section text={t('自动重试设置')}>
+              <Row style={{ marginTop: 10 }}>
+                <Col span={24}>
+                  <Banner
+                    type='info'
+                    description='当空回复或上游报错时自动重试而不是直接返回'
+                  />
+                </Col>
+              </Row>
+              <Row>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Switch
+                    label={t('开启自动重试')}
+                    field={'global.auto_retry_enabled'}
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.auto_retry_enabled': value,
+                      })
+                    }
+                    extraText={'开启后，当空回复或上游报错时自动重试'}
+                  />
+                </Col>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.InputNumber
+                    label={t('重试次数')}
+                    field={'global.auto_retry_count'}
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.auto_retry_count': value,
+                      })
+                    }
+                    min={1}
+                    max={10}
+                    disabled={!inputs['global.auto_retry_enabled']}
+                  />
+                </Col>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Switch
+                    label={t('强制更换渠道')}
+                    field={'global.auto_retry_force_channel_switch'}
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.auto_retry_force_channel_switch': value,
+                      })
+                    }
+                    extraText={'重试时强制切换到不同的渠道'}
+                    disabled={!inputs['global.auto_retry_enabled']}
+                  />
+                </Col>
+              </Row>
+              <Row>
+                <Col xs={24} sm={12} md={12} lg={12} xl={12}>
+                  <Form.Input
+                    label={t('重试状态码')}
+                    field={'global.auto_retry_status_codes'}
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.auto_retry_status_codes': value,
+                      })
+                    }
+                    placeholder='5xx,4xx'
+                    extraText={'不填默认所有状态码，可使用 x，使用英文逗号分割'}
+                    disabled={!inputs['global.auto_retry_enabled']}
                   />
                 </Col>
               </Row>

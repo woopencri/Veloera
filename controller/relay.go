@@ -99,23 +99,47 @@ func Relay(c *gin.Context) {
 		}
 	}
 
-	for i := 0; i <= common.RetryTimes; i++ {
-		channel, err := getChannel(c, group, originalModel, i)
+	autoRetryCount := model_setting.GetAutoRetryCount()
+	maxRetries := autoRetryCount
+
+	for i := 0; i <= maxRetries; i++ {
+		// 如果启用了强制切换渠道，且不是第一次尝试，则增加重试索引以获取不同渠道
+		retryIndex := i
+		if i > 0 && model_setting.ShouldForceChannelSwitch() {
+			retryIndex = i + 1 // 强制获取不同的渠道
+		}
+
+		channel, err := getChannel(c, group, originalModel, retryIndex)
 		if err != nil {
 			common.LogError(c, err.Error())
 			openaiErr = service.OpenAIErrorWrapperLocal(err, "get_channel_failed", http.StatusInternalServerError)
 			break
 		}
 
+		// 记录响应前的状态，用于检测空回复
+		c.Set("response_written", false)
 		openaiErr = relayRequest(c, relayMode, channel)
 
+		// 检测空回复的情况
 		if openaiErr == nil {
-			return // 成功处理请求，直接返回
+			// 检查是否实际写入了响应内容
+			responseWritten := c.GetBool("response_written")
+			if !responseWritten && model_setting.GetGlobalSettings().AutoRetryEnabled {
+				// 创建一个表示空回复的错误，以便触发重试
+				openaiErr = service.OpenAIErrorWrapperLocal(
+					fmt.Errorf("empty response from upstream"),
+					"empty_response",
+					http.StatusInternalServerError,
+				)
+				common.LogWarn(c, fmt.Sprintf("detected empty response from channel #%d, will retry", channel.Id))
+			} else {
+				return // 成功处理请求，直接返回
+			}
 		}
 
 		go processChannelError(c, channel.Id, channel.Type, channel.Name, channel.GetAutoBan(), openaiErr)
 
-		if !shouldRetry(c, openaiErr, common.RetryTimes-i) {
+		if !shouldRetryWithAutoConfig(c, openaiErr, maxRetries-i) {
 			break
 		}
 	}
@@ -334,6 +358,49 @@ func shouldRetry(c *gin.Context, openaiErr *dto.OpenAIErrorWithStatusCode, retry
 	return true
 }
 
+// shouldRetryWithAutoConfig 使用自动重试配置判断是否应该重试
+func shouldRetryWithAutoConfig(c *gin.Context, openaiErr *dto.OpenAIErrorWithStatusCode, retryTimes int) bool {
+	if openaiErr == nil {
+		return false
+	}
+	if openaiErr.LocalError {
+		return false
+	}
+	if retryTimes <= 0 {
+		return false
+	}
+	if _, ok := c.Get("specific_channel_id"); ok {
+		return false
+	}
+
+	// 检查是否启用了自动重试
+	if !model_setting.GetGlobalSettings().AutoRetryEnabled {
+		return shouldRetry(c, openaiErr, retryTimes) // 回退到原有逻辑
+	}
+
+	// 使用配置的状态码判断是否重试
+	if !model_setting.ShouldRetryForStatusCode(openaiErr.StatusCode) {
+		return false
+	}
+
+	// 对于空回复的情况，也应该重试
+	if openaiErr.Error.Message == "" || strings.Contains(strings.ToLower(openaiErr.Error.Message), "empty") {
+		return true
+	}
+
+	// 超时不重试
+	if openaiErr.StatusCode == 504 || openaiErr.StatusCode == 524 || openaiErr.StatusCode == 408 {
+		return false
+	}
+
+	// 成功状态码不重试
+	if openaiErr.StatusCode/100 == 2 {
+		return false
+	}
+
+	return true
+}
+
 func processChannelError(c *gin.Context, channelId int, channelType int, channelName string, autoBan bool, err *dto.OpenAIErrorWithStatusCode) {
 	// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
 	// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
@@ -401,7 +468,7 @@ func RelayNotFound(c *gin.Context) {
 }
 
 func RelayTask(c *gin.Context) {
-	retryTimes := common.RetryTimes
+	retryTimes := model_setting.GetAutoRetryCount()
 	channelId := c.GetInt("channel_id")
 	relayMode := c.GetInt("relay_mode")
 	group := c.GetString("group")

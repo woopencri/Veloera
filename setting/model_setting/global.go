@@ -17,6 +17,8 @@
 package model_setting
 
 import (
+	"strconv"
+	"strings"
 	"veloera/setting/config"
 )
 
@@ -28,6 +30,10 @@ type GlobalSettings struct {
 	RateLimitExemptGroup         string `json:"rate_limit_exempt_group"`
 	SafeCheckExemptEnabled       bool   `json:"safe_check_exempt_enabled"`
 	SafeCheckExemptGroup         string `json:"safe_check_exempt_group"`
+	AutoRetryEnabled             bool   `json:"auto_retry_enabled"`
+	AutoRetryCount               int    `json:"auto_retry_count"`
+	AutoRetryForceChannelSwitch  bool   `json:"auto_retry_force_channel_switch"`
+	AutoRetryStatusCodes         string `json:"auto_retry_status_codes"`
 }
 
 // 默认配置
@@ -39,6 +45,10 @@ var defaultOpenaiSettings = GlobalSettings{
 	RateLimitExemptGroup:         "bulk-ok",
 	SafeCheckExemptEnabled:       false,
 	SafeCheckExemptGroup:         "nsfw-ok",
+	AutoRetryEnabled:             false,
+	AutoRetryCount:               3,
+	AutoRetryForceChannelSwitch:  false,
+	AutoRetryStatusCodes:         "5xx,4xx",
 }
 
 // 全局实例
@@ -59,4 +69,55 @@ func ShouldBypassRateLimit(group string) bool {
 
 func ShouldBypassSafeCheck(group string) bool {
 	return globalSettings.SafeCheckExemptEnabled && group == globalSettings.SafeCheckExemptGroup
+}
+
+// GetAutoRetryCount 获取自动重试次数
+func GetAutoRetryCount() int {
+	if !globalSettings.AutoRetryEnabled {
+		return 0
+	}
+	return globalSettings.AutoRetryCount
+}
+
+// ShouldForceChannelSwitch 是否强制切换渠道
+func ShouldForceChannelSwitch() bool {
+	return globalSettings.AutoRetryEnabled && globalSettings.AutoRetryForceChannelSwitch
+}
+
+// ShouldRetryForStatusCode 检查状态码是否应该重试
+func ShouldRetryForStatusCode(statusCode int) bool {
+	if !globalSettings.AutoRetryEnabled {
+		return false
+	}
+
+	if globalSettings.AutoRetryStatusCodes == "" {
+		return true // 默认所有状态码都重试
+	}
+
+	codes := strings.Split(globalSettings.AutoRetryStatusCodes, ",")
+	for _, code := range codes {
+		code = strings.TrimSpace(code)
+		if code == "" {
+			continue
+		}
+
+		// 处理 5xx, 4xx 这样的通配符
+		if strings.HasSuffix(code, "xx") {
+			prefix := strings.TrimSuffix(code, "xx")
+			if prefixNum, err := strconv.Atoi(prefix); err == nil {
+				if statusCode/100 == prefixNum {
+					return true
+				}
+			}
+		} else {
+			// 处理具体的状态码
+			if codeNum, err := strconv.Atoi(code); err == nil {
+				if statusCode == codeNum {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }

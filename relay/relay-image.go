@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"strings"
@@ -32,6 +31,8 @@ import (
 	"veloera/relay/helper"
 	"veloera/service"
 	"veloera/setting"
+
+	"github.com/gin-gonic/gin"
 )
 
 func getAndValidImageRequest(c *gin.Context, info *relaycommon.RelayInfo) (*dto.ImageRequest, error) {
@@ -197,6 +198,8 @@ func ImageHelper(c *gin.Context) *dto.OpenAIErrorWithStatusCode {
 	}
 
 	logContent := fmt.Sprintf("大小 %s, 品质 %s", imageRequest.Size, quality)
+	// 标记响应已写入，用于空回复检测
+	c.Set("response_written", true)
 	postConsumeQuota(c, relayInfo, usage, 0, userQuota, priceData, logContent)
 	return nil
 }
