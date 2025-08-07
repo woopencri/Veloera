@@ -81,6 +81,7 @@ export default function ModelCommonRatioSettings(props) {
   const presetSources = [
     { value: 'flexible', label: '通用（默认，推荐）' },
     { value: 'openrouter', label: 'OpenRouter' },
+    { value: 'mixed', label: '混合' },
     { value: 'legacy', label: '传统（不推荐）' },
   ];
 

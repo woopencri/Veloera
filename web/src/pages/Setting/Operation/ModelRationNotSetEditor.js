@@ -255,6 +255,61 @@ export default function ModelRatioNotSetEditor(props) {
       ),
     },
   ];
+  // 新增：从 mixed 官网预设中填充缺失倍率（仅对当前未设置项）
+  const [loadingMixed, setLoadingMixed] = useState(false);
+  const handleFillFromMixed = async () => {
+    try {
+      setLoadingMixed(true);
+      // 参考 ModelCommonRatioSettings.fetchPresetRatios 的来源与结构
+      const promptUrl = 'https://public-assets.veloera.org/defaults/model-ratios/mixed/prompt.json';
+      const completionUrl = 'https://public-assets.veloera.org/defaults/model-ratios/mixed/completion.json';
+
+      const [promptRatios, completionRatios] = await Promise.all([
+        fetch(promptUrl).then((res) => (res.ok ? res.json() : {})).catch(() => ({})),
+        fetch(completionUrl).then((res) => (res.ok ? res.json() : {})).catch(() => ({})),
+      ]);
+
+      let filledCount = 0;
+
+      setModels((prev) =>
+        prev.map((m) => {
+          // 仅当该模型存在于目录（即在 prev 中）时才考虑填充；未收录的自然不会出现在 prev
+          // 保持 price 优先：若设置了 price，则不填充倍率
+          if (m.price !== '') return m;
+
+          const next = { ...m };
+          if ((next.ratio === '' || next.ratio === undefined) && promptRatios && promptRatios[next.name] !== undefined) {
+            next.ratio = String(promptRatios[next.name]);
+            filledCount += 1;
+          }
+          if ((next.completionRatio === '' || next.completionRatio === undefined) && completionRatios && completionRatios[next.name] !== undefined) {
+            next.completionRatio = String(completionRatios[next.name]);
+            filledCount += 1;
+          }
+          return next;
+        }),
+      );
+
+      if (filledCount > 0) {
+        Notification.success({
+          title: t('已填入官网倍率'),
+          content: t('成功填充 {{count}} 项缺失倍率', { count: filledCount }),
+          duration: 3,
+        });
+      } else {
+        Notification.info({
+          title: t('无可填充项'),
+          content: t('未找到可从官网填充的缺失倍率或均已设置'),
+          duration: 3,
+        });
+      }
+    } catch (e) {
+      console.error('填入官网倍率失败:', e);
+      showError(t('填入官网倍率失败，请稍后重试'));
+    } finally {
+      setLoadingMixed(false);
+    }
+  };
 
   const updateModel = (name, field, value) => {
     if (value !== '' && isNaN(value)) {
@@ -402,6 +457,15 @@ export default function ModelRatioNotSetEditor(props) {
             disabled={selectedRowKeys.length === 0}
           >
             {t('批量设置')} ({selectedRowKeys.length})
+          </Button>
+          {/* 新增：填入官网倍率按钮，仅填充缺失项，来源 mixed */}
+          <Button
+            type='tertiary'
+            onClick={handleFillFromMixed}
+            loading={loadingMixed}
+            disabled={models.length === 0}
+          >
+            {t('填入官网倍率')}
           </Button>
           <Button
             type='primary'
