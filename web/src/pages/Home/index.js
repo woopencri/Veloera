@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 import React, { useContext, useEffect, useState } from 'react';
-import { Card, Col, Row } from '@douyinfe/semi-ui';
+import { Banner, Card, Col, Row } from '@douyinfe/semi-ui';
 import { API, showError, showNotice, timestamp2string } from '../../helpers';
 import { StatusContext } from '../../context/Status';
 import { marked } from 'marked';
@@ -90,6 +90,17 @@ const Home = () => {
 
   return (
     <>
+      {/* Warning banner for chat content logging */}
+      {statusState?.status?.log_chat_content_enabled && (
+        <Banner
+          type="warning"
+          description="此站点管理员可查看您的对话内容"
+          style={{
+            margin: '0 0 16px 0',
+            borderRadius: '6px',
+          }}
+        />
+      )}
       {homePageContentLoaded && homePageContent === '' ? (
         <>
           <Card

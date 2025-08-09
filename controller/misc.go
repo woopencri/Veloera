@@ -50,6 +50,7 @@ func TestStatus(c *gin.Context) {
 func GetStatus(c *gin.Context) {
 	common.OptionMapRWMutex.RLock()
 	affEnabled := common.OptionMap["AffEnabled"] == "true"
+	logChatContentEnabled := common.OptionMap["LogChatContentEnabled"] == "true"
 	common.OptionMapRWMutex.RUnlock()
 
 	c.JSON(http.StatusOK, gin.H{
@@ -97,6 +98,7 @@ func GetStatus(c *gin.Context) {
 			"setup":                       constant.Setup,
 			"check_in_enabled":            common.CheckInEnabled,
 			"aff_enabled":                 affEnabled,
+			"log_chat_content_enabled":    logChatContentEnabled,
 		},
 	})
 	return
