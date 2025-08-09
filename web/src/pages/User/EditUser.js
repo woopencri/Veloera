@@ -46,6 +46,7 @@ const EditUser = (props) => {
     github_id: '',
     oidc_id: '',
     wechat_id: '',
+    linux_do_id: '',
     email: '',
     quota: 0,
     group: 'default',
@@ -59,6 +60,7 @@ const EditUser = (props) => {
     oidc_id,
     wechat_id,
     telegram_id,
+    linux_do_id,
     email,
     quota,
     group,
@@ -292,11 +294,23 @@ const EditUser = (props) => {
             readonly
           />
           <div style={{ marginTop: 20 }}>
-            <Typography.Text>{t('已绑定的Telegram账户')}</Typography.Text>
+            <Typography.Text>{t('已绑定的 Telegram 账户')}</Typography.Text>
           </div>
           <Input
             name='telegram_id'
             value={telegram_id}
+            autoComplete='new-password'
+            placeholder={t(
+              '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
+            )}
+            readonly
+          />
+          <div style={{ marginTop: 20 }}>
+            <Typography.Text>{t('已绑定的 LINUX DO 账户')}</Typography.Text>
+          </div>
+          <Input
+            name='linux_do_id'
+            value={linux_do_id}
             autoComplete='new-password'
             placeholder={t(
               '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
