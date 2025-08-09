@@ -18,12 +18,13 @@ package helper
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"veloera/common"
 	constant2 "veloera/constant"
 	relaycommon "veloera/relay/common"
 	"veloera/setting"
 	"veloera/setting/operation_setting"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PriceData struct {
@@ -47,8 +48,11 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 	modelNameForPrice := modelName
 	modelNameForRatio := modelName
 
+	// Check redirect billing setting
+	redirectBillingEnabled := operation_setting.IsRedirectBillingEnabled()
+
 	// Check if the model has a prefix by looking at the difference between OriginModelName and UpstreamModelName
-	if info.OriginModelName != info.UpstreamModelName {
+	if info.OriginModelName != info.UpstreamModelName && !redirectBillingEnabled {
 		modelNameForPrice = info.UpstreamModelName
 		modelNameForRatio = info.UpstreamModelName
 	}

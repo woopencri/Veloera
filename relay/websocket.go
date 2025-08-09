@@ -19,8 +19,6 @@ package relay
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"net/http"
 	"veloera/common"
 	"veloera/dto"
@@ -28,6 +26,9 @@ import (
 	"veloera/service"
 	"veloera/setting"
 	"veloera/setting/operation_setting"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 func WssHelper(c *gin.Context, ws *websocket.Conn) (openaiErr *dto.OpenAIErrorWithStatusCode) {
@@ -56,7 +57,14 @@ func WssHelper(c *gin.Context, ws *websocket.Conn) (openaiErr *dto.OpenAIErrorWi
 		}
 	}
 	//relayInfo.UpstreamModelName = textRequest.Model
-	modelPrice, getModelPriceSuccess := operation_setting.GetModelPriceWithFallback(relayInfo.UpstreamModelName, false)
+
+	// Check redirect billing setting to determine which model name to use for pricing
+	modelNameForPricing := relayInfo.UpstreamModelName
+	if operation_setting.IsRedirectBillingEnabled() {
+		modelNameForPricing = relayInfo.OriginModelName
+	}
+
+	modelPrice, getModelPriceSuccess := operation_setting.GetModelPriceWithFallback(modelNameForPricing, false)
 	groupRatio := setting.GetGroupRatio(relayInfo.Group)
 
 	var preConsumedQuota int
@@ -82,7 +90,7 @@ func WssHelper(c *gin.Context, ws *websocket.Conn) (openaiErr *dto.OpenAIErrorWi
 		//if realtimeEvent.Session.MaxResponseOutputTokens != 0 {
 		//	preConsumedTokens = promptTokens + int(realtimeEvent.Session.MaxResponseOutputTokens)
 		//}
-		modelRatio, _ = operation_setting.GetModelRatioWithFallback(relayInfo.UpstreamModelName)
+		modelRatio, _ = operation_setting.GetModelRatioWithFallback(modelNameForPricing)
 		ratio = modelRatio * groupRatio
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	} else {

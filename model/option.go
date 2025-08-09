@@ -158,6 +158,9 @@ func InitOptionMap() {
 	common.OptionMap["fallback_input_ratio"] = ""
 	common.OptionMap["fallback_completion_ratio"] = ""
 
+	// Add redirect billing option
+	common.OptionMap["redirect_billing_enabled"] = "false"
+
 	// Add reverse proxy configuration options
 	common.OptionMap["ReverseProxyEnabled"] = "false"
 	common.OptionMap["ReverseProxyProvider"] = "nginx"

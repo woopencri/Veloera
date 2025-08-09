@@ -50,6 +50,7 @@ export default function ModelCommonRatioSettings(props) {
     fallback_single_price: '',
     fallback_input_ratio: '',
     fallback_completion_ratio: '',
+    redirect_billing_enabled: false,
   });
   const { t } = useTranslation();
   const refForm = useRef();
@@ -69,10 +70,18 @@ export default function ModelCommonRatioSettings(props) {
           [fieldName]: typeof value === 'number' ? String(value) : value,
           fallback_single_price: value ? '' : inputs.fallback_single_price,
         }));
+      } else if (fieldName === 'redirect_billing_enabled') {
+        const newInputs = {
+          ...inputs,
+          [fieldName]: value
+        };
+        setInputs(newInputs);
+        // Auto-save redirect billing setting
+        saveRedirectBillingSetting(value);
       } else {
-        setInputs((inputs) => ({ 
-          ...inputs, 
-          [fieldName]: typeof value === 'number' ? String(value) : value 
+        setInputs((inputs) => ({
+          ...inputs,
+          [fieldName]: typeof value === 'number' ? String(value) : value
         }));
       }
     };
@@ -307,17 +316,41 @@ export default function ModelCommonRatioSettings(props) {
     }
   };
 
+  const saveRedirectBillingSetting = async (enabled) => {
+    try {
+      setLoading(true);
+      const res = await API.put('/api/option/', {
+        key: 'redirect_billing_enabled',
+        value: String(enabled)
+      });
+      
+      if (!res.data.success) {
+        showError(res.data.message);
+        return;
+      }
+      
+      showSuccess(t('重定向计费设置保存成功'));
+      props.refresh();
+    } catch (error) {
+      console.error('保存重定向计费设置失败:', error);
+      showError(t('保存失败，请重试'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const currentInputs = {
       fallback_pricing_enabled: false,
       fallback_single_price: '',
       fallback_input_ratio: '',
       fallback_completion_ratio: '',
+      redirect_billing_enabled: false,
     };
     
     for (let key in props.options) {
       if (Object.keys(currentInputs).includes(key)) {
-        if (key === 'fallback_pricing_enabled') {
+        if (key === 'fallback_pricing_enabled' || key === 'redirect_billing_enabled') {
           currentInputs[key] = props.options[key] === 'true';
         } else {
           currentInputs[key] = props.options[key] || '';
@@ -407,6 +440,15 @@ export default function ModelCommonRatioSettings(props) {
               </Col>
             </Row>
           )}
+          <Row gutter={16} style={{ marginTop: 16 }}>
+            <Col span={24}>
+              <Form.Switch
+                label={t('按照重定向前模型计费')}
+                field="redirect_billing_enabled"
+                onChange={handleFieldChange('redirect_billing_enabled')}
+              />
+            </Col>
+          </Row>
         </Form.Section>
       </Form>
       

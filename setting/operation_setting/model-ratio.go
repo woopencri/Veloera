@@ -168,7 +168,7 @@ var defaultModelRatio = map[string]float64{
 	"gemini-2.5-flash-preview-04-17-thinking":   0.075,
 	"gemini-2.5-flash-preview-04-17-nothinking": 0.075,
 	"text-embedding-004":                        0.001,
-	"glm-4.5":                                   0.008, // ￥0.008 / 1k tokens
+	"glm-4.5":                                   0.008,      // ￥0.008 / 1k tokens
 	"glm-4":                                     0.05 * RMB, // ￥0.05 / 1k tokens
 	"glm-4-plus":                                0.05 * RMB,
 	"glm-4-air":                                 0.001 * RMB,
@@ -680,6 +680,11 @@ func GetCompletionRatioWithFallback(name string) float64 {
 
 	// Return original completion ratio
 	return ratio
+}
+
+// IsRedirectBillingEnabled checks if redirect billing is enabled
+func IsRedirectBillingEnabled() bool {
+	return common.OptionMap["redirect_billing_enabled"] == "true"
 }
 
 func ModelRatio2JSONString() string {

@@ -157,9 +157,15 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	audioOutTokens := usage.OutputTokenDetails.AudioTokens
 
 	tokenName := ctx.GetString("token_name")
-	completionRatio := decimal.NewFromFloat(operation_setting.GetCompletionRatio(modelName))
-	audioRatio := decimal.NewFromFloat(operation_setting.GetAudioRatio(relayInfo.OriginModelName))
-	audioCompletionRatio := decimal.NewFromFloat(operation_setting.GetAudioCompletionRatio(modelName))
+	// Check redirect billing setting to determine which model name to use for pricing
+	modelNameForPricing := modelName
+	if operation_setting.IsRedirectBillingEnabled() && relayInfo.OriginModelName != relayInfo.UpstreamModelName {
+		modelNameForPricing = relayInfo.OriginModelName
+	}
+
+	completionRatio := decimal.NewFromFloat(operation_setting.GetCompletionRatio(modelNameForPricing))
+	audioRatio := decimal.NewFromFloat(operation_setting.GetAudioRatio(modelNameForPricing))
+	audioCompletionRatio := decimal.NewFromFloat(operation_setting.GetAudioCompletionRatio(modelNameForPricing))
 
 	quotaInfo := QuotaInfo{
 		InputDetails: TokenDetails{
@@ -288,9 +294,15 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	audioOutTokens := usage.CompletionTokenDetails.AudioTokens
 
 	tokenName := ctx.GetString("token_name")
-	completionRatio := decimal.NewFromFloat(operation_setting.GetCompletionRatio(relayInfo.OriginModelName))
-	audioRatio := decimal.NewFromFloat(operation_setting.GetAudioRatio(relayInfo.OriginModelName))
-	audioCompletionRatio := decimal.NewFromFloat(operation_setting.GetAudioCompletionRatio(relayInfo.OriginModelName))
+	// Check redirect billing setting to determine which model name to use for pricing
+	modelNameForPricing := relayInfo.OriginModelName
+	if operation_setting.IsRedirectBillingEnabled() && relayInfo.OriginModelName != relayInfo.UpstreamModelName {
+		modelNameForPricing = relayInfo.OriginModelName
+	}
+
+	completionRatio := decimal.NewFromFloat(operation_setting.GetCompletionRatio(modelNameForPricing))
+	audioRatio := decimal.NewFromFloat(operation_setting.GetAudioRatio(modelNameForPricing))
+	audioCompletionRatio := decimal.NewFromFloat(operation_setting.GetAudioCompletionRatio(modelNameForPricing))
 
 	modelRatio := priceData.ModelRatio
 	groupRatio := priceData.GroupRatio
