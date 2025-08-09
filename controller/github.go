@@ -21,14 +21,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-gonic/gin"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 	"veloera/common"
 	"veloera/model"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
 )
 
 type GitHubOAuthResponse struct {
@@ -95,171 +94,66 @@ func getGitHubUserInfoByCode(code string) (*GitHubUser, error) {
 }
 
 func GitHubOAuth(c *gin.Context) {
-	session := sessions.Default(c)
-	state := c.Query("state")
-	if state == "" || session.Get("oauth_state") == nil || state != session.Get("oauth_state").(string) {
-		c.JSON(http.StatusForbidden, gin.H{
-			"success": false,
-			"message": "state is empty or not same",
-		})
-		return
-	}
-	username := session.Get("username")
-	if username != nil {
-		GitHubBind(c)
-		return
-	}
-
-	if !common.GitHubOAuthEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "管理员未开启通过 GitHub 登录以及注册",
-		})
-		return
-	}
 	code := c.Query("code")
 	githubUser, err := getGitHubUserInfoByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		respondWithError(c, http.StatusOK, err.Error())
 		return
 	}
-	user := model.User{
-		GitHubId: githubUser.Login,
-	}
-	// IsGitHubIdAlreadyTaken is unscoped
-	if model.IsGitHubIdAlreadyTaken(user.GitHubId) {
-		// FillUserByGitHubId is scoped
-		err := user.FillUserByGitHubId()
-		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
-			return
-		}
-		// if user.Id == 0 , user has been deleted
-		if user.Id == 0 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "用户已注销",
-			})
-			return
-		}
-	} else {
-		if common.RegisterEnabled {
-			if githubUser.Name != "" {
-				user.DisplayName = githubUser.Name
-			} else {
-				user.DisplayName = "GitHub User"
-			}
-			user.Email = githubUser.Email
-			user.Role = common.RoleCommonUser
-			user.Status = common.UserStatusEnabled
-			affCode := session.Get("aff")
-			inviterId := 0
-			if affCode != nil {
-				inviterId, _ = model.GetUserIdByAffCode(affCode.(string))
-			}
 
-			// Try to insert user, handle username uniqueness constraint
-			var err error
-			baseUserId := model.GetMaxUserId() + 1
-			for i := 0; i < 5; i++ {
-				user.Username = "github_" + strconv.Itoa(baseUserId+i)
-				err = user.Insert(inviterId)
-				if err == nil {
-					break
-				}
-				// Check if error is about username uniqueness
-				if strings.Contains(err.Error(), "UNIQUE constraint failed: users.username") {
-					continue
-				}
-				// If it's another error, break the loop
-				break
-			}
-
-			if err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": err.Error(),
-				})
-				return
-			}
-		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "管理员关闭了新用户注册",
-			})
-			return
-		}
+	oauthUser := &OAuthUser{
+		ID:          githubUser.Login,
+		Username:    githubUser.Login,
+		DisplayName: githubUser.Name,
+		Email:       githubUser.Email,
+		Provider:    ProviderGitHub,
 	}
 
-	if user.Status != common.UserStatusEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "用户已被封禁",
-			"success": false,
-		})
-		return
+	config := &OAuthConfig{
+		Enabled:      common.GitHubOAuthEnabled,
+		ClientID:     common.GitHubClientId,
+		ClientSecret: common.GitHubClientSecret,
 	}
-	setupLogin(&user, c)
+
+	handleOAuthLogin(c, oauthUser, config,
+		model.IsGitHubIdAlreadyTaken,
+		func(user *model.User) error {
+			user.GitHubId = oauthUser.ID
+			return user.FillUserByGitHubId()
+		},
+		createGitHubUser,
+	)
 }
 
 func GitHubBind(c *gin.Context) {
-	if !common.GitHubOAuthEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "管理员未开启通过 GitHub 登录以及注册",
-		})
-		return
-	}
 	code := c.Query("code")
 	githubUser, err := getGitHubUserInfoByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		respondWithError(c, http.StatusOK, err.Error())
 		return
 	}
-	user := model.User{
-		GitHubId: githubUser.Login,
+
+	oauthUser := &OAuthUser{
+		ID:          githubUser.Login,
+		Username:    githubUser.Login,
+		DisplayName: githubUser.Name,
+		Email:       githubUser.Email,
+		Provider:    ProviderGitHub,
 	}
-	if model.IsGitHubIdAlreadyTaken(user.GitHubId) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "该 GitHub 账户已被绑定",
-		})
-		return
+
+	config := &OAuthConfig{
+		Enabled:      common.GitHubOAuthEnabled,
+		ClientID:     common.GitHubClientId,
+		ClientSecret: common.GitHubClientSecret,
 	}
-	session := sessions.Default(c)
-	id := session.Get("id")
-	// id := c.GetInt("id")  // critical bug!
-	user.Id = id.(int)
-	err = user.FillUserById()
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	user.GitHubId = githubUser.Login
-	err = user.Update(false)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "bind",
-	})
-	return
+
+	handleOAuthBind(c, oauthUser, config,
+		model.IsGitHubIdAlreadyTaken,
+		func(user *model.User) error {
+			user.GitHubId = oauthUser.ID
+			return user.FillUserByGitHubId()
+		},
+	)
 }
 
 func GenerateOAuthCode(c *gin.Context) {

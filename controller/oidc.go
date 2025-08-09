@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 	"veloera/common"
@@ -30,7 +29,6 @@ import (
 	"veloera/setting"
 	"veloera/setting/system_setting"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -118,165 +116,66 @@ func getOidcUserInfoByCode(code string) (*OidcUser, error) {
 }
 
 func OidcAuth(c *gin.Context) {
-	session := sessions.Default(c)
-	state := c.Query("state")
-	if state == "" || session.Get("oauth_state") == nil || state != session.Get("oauth_state").(string) {
-		c.JSON(http.StatusForbidden, gin.H{
-			"success": false,
-			"message": "state is empty or not same",
-		})
-		return
-	}
-	username := session.Get("username")
-	if username != nil {
-		OidcBind(c)
-		return
-	}
-	if !system_setting.GetOIDCSettings().Enabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "管理员未开启通过 OIDC 登录以及注册",
-		})
-		return
-	}
 	code := c.Query("code")
 	oidcUser, err := getOidcUserInfoByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		respondWithError(c, http.StatusOK, err.Error())
 		return
 	}
-	user := model.User{
-		OidcId: oidcUser.OpenID,
-	}
-	if model.IsOidcIdAlreadyTaken(user.OidcId) {
-		err := user.FillUserByOidcId()
-		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
-			return
-		}
-	} else {
-		if common.RegisterEnabled {
-			user.Email = oidcUser.Email
-			// Initialize username
-			if oidcUser.PreferredUsername != "" {
-				user.Username = oidcUser.PreferredUsername
-			} else {
-				user.Username = "oidc_" + strconv.Itoa(model.GetMaxUserId()+1)
-			}
 
-			if oidcUser.Name != "" {
-				user.DisplayName = oidcUser.Name
-			} else {
-				user.DisplayName = "OIDC User"
-			}
-
-			// Try to insert user, handle username uniqueness constraint
-			var err error
-			// If custom username provided, try it first, then fallback to incremental ids
-			isCustomUsername := oidcUser.PreferredUsername != ""
-			baseUserId := model.GetMaxUserId() + 1
-
-			for i := 0; i < 5; i++ {
-				if i > 0 || !isCustomUsername {
-					// If custom username failed on first attempt or if using generated username
-					user.Username = "oidc_" + strconv.Itoa(baseUserId+i-1)
-				}
-
-				err = user.Insert(0)
-				if err == nil {
-					break
-				}
-				// Check if error is about username uniqueness
-				if strings.Contains(err.Error(), "UNIQUE constraint failed: users.username") {
-					continue
-				}
-				// If it's another error, break the loop
-				break
-			}
-
-			if err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": err.Error(),
-				})
-				return
-			}
-		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "管理员关闭了新用户注册",
-			})
-			return
-		}
+	oauthUser := &OAuthUser{
+		ID:          oidcUser.OpenID,
+		Username:    oidcUser.PreferredUsername,
+		DisplayName: oidcUser.Name,
+		Email:       oidcUser.Email,
+		Provider:    ProviderOIDC,
 	}
 
-	if user.Status != common.UserStatusEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "用户已被封禁",
-			"success": false,
-		})
-		return
+	oidcSettings := system_setting.GetOIDCSettings()
+	config := &OAuthConfig{
+		Enabled:      oidcSettings.Enabled,
+		ClientID:     oidcSettings.ClientId,
+		ClientSecret: oidcSettings.ClientSecret,
 	}
-	setupLogin(&user, c)
+
+	handleOAuthLogin(c, oauthUser, config,
+		model.IsOidcIdAlreadyTaken,
+		func(user *model.User) error {
+			user.OidcId = oauthUser.ID
+			return user.FillUserByOidcId()
+		},
+		createOIDCUser,
+	)
 }
 
 func OidcBind(c *gin.Context) {
-	if !system_setting.GetOIDCSettings().Enabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "管理员未开启通过 OIDC 登录以及注册",
-		})
-		return
-	}
 	code := c.Query("code")
 	oidcUser, err := getOidcUserInfoByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		respondWithError(c, http.StatusOK, err.Error())
 		return
 	}
-	user := model.User{
-		OidcId: oidcUser.OpenID,
+
+	oauthUser := &OAuthUser{
+		ID:          oidcUser.OpenID,
+		Username:    oidcUser.PreferredUsername,
+		DisplayName: oidcUser.Name,
+		Email:       oidcUser.Email,
+		Provider:    ProviderOIDC,
 	}
-	if model.IsOidcIdAlreadyTaken(user.OidcId) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "该 OIDC 账户已被绑定",
-		})
-		return
+
+	oidcSettings := system_setting.GetOIDCSettings()
+	config := &OAuthConfig{
+		Enabled:      oidcSettings.Enabled,
+		ClientID:     oidcSettings.ClientId,
+		ClientSecret: oidcSettings.ClientSecret,
 	}
-	session := sessions.Default(c)
-	id := session.Get("id")
-	// id := c.GetInt("id")  // critical bug!
-	user.Id = id.(int)
-	err = user.FillUserById()
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	user.OidcId = oidcUser.OpenID
-	err = user.Update(false)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "bind",
-	})
-	return
+
+	handleOAuthBind(c, oauthUser, config,
+		model.IsOidcIdAlreadyTaken,
+		func(user *model.User) error {
+			user.OidcId = oauthUser.ID
+			return user.FillUserByOidcId()
+		},
+	)
 }

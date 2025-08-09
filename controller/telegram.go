@@ -32,52 +32,38 @@ import (
 
 func TelegramBind(c *gin.Context) {
 	if !common.TelegramOAuthEnabled {
-		c.JSON(200, gin.H{
-			"message": "管理员未开启通过 Telegram 登录以及注册",
-			"success": false,
-		})
+		respondWithError(c, http.StatusOK, "管理员未开启通过 Telegram 登录以及注册")
 		return
 	}
+
 	params := c.Request.URL.Query()
 	if !checkTelegramAuthorization(params, common.TelegramBotToken) {
-		c.JSON(200, gin.H{
-			"message": "无效的请求",
-			"success": false,
-		})
+		respondWithError(c, http.StatusOK, "无效的请求")
 		return
 	}
+
 	telegramId := params["id"][0]
 	if model.IsTelegramIdAlreadyTaken(telegramId) {
-		c.JSON(200, gin.H{
-			"message": "该 Telegram 账户已被绑定",
-			"success": false,
-		})
+		respondWithError(c, http.StatusOK, "该 Telegram 账户已被绑定")
 		return
 	}
 
 	session := sessions.Default(c)
 	id := session.Get("id")
 	user := model.User{Id: id.(int)}
+
 	if err := user.FillUserById(); err != nil {
-		c.JSON(200, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
+		respondWithError(c, http.StatusOK, err.Error())
 		return
 	}
-	if user.Id == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "用户已注销",
-		})
+
+	if !checkUserStatus(c, &user) {
 		return
 	}
+
 	user.TelegramId = telegramId
 	if err := user.Update(false); err != nil {
-		c.JSON(200, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
+		respondWithError(c, http.StatusOK, err.Error())
 		return
 	}
 
@@ -86,30 +72,28 @@ func TelegramBind(c *gin.Context) {
 
 func TelegramLogin(c *gin.Context) {
 	if !common.TelegramOAuthEnabled {
-		c.JSON(200, gin.H{
-			"message": "管理员未开启通过 Telegram 登录以及注册",
-			"success": false,
-		})
+		respondWithError(c, http.StatusOK, "管理员未开启通过 Telegram 登录以及注册")
 		return
 	}
+
 	params := c.Request.URL.Query()
 	if !checkTelegramAuthorization(params, common.TelegramBotToken) {
-		c.JSON(200, gin.H{
-			"message": "无效的请求",
-			"success": false,
-		})
+		respondWithError(c, http.StatusOK, "无效的请求")
 		return
 	}
 
 	telegramId := params["id"][0]
 	user := model.User{TelegramId: telegramId}
+
 	if err := user.FillUserByTelegramId(); err != nil {
-		c.JSON(200, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
+		respondWithError(c, http.StatusOK, err.Error())
 		return
 	}
+
+	if !checkUserStatus(c, &user) {
+		return
+	}
+
 	setupLogin(&user, c)
 }
 
