@@ -16,126 +16,75 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
-import React, { useContext, useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { UserContext } from '../context/User';
-import {
-  API,
-  getLogo,
-  showError,
-  showInfo,
-  showSuccess,
-  updateAPI,
-} from '../helpers';
-import {
-  onGitHubOAuthClicked,
-  onOIDCClicked,
-  onLinuxDOOAuthClicked,
-} from './utils';
-import Turnstile from 'react-turnstile';
-import {
-  Button,
-  Card,
-  Divider,
-  Form,
-  Icon,
-  Layout,
-  Modal,
-} from '@douyinfe/semi-ui';
-import Title from '@douyinfe/semi-ui/lib/es/typography/title';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { API, showError, showInfo, showSuccess, updateAPI } from '../helpers';
+import { Button, Form, Modal } from '@douyinfe/semi-ui';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
-import TelegramLoginButton from 'react-telegram-login';
-
-import { IconGithubLogo, IconAlarm } from '@douyinfe/semi-icons';
-import OIDCIcon from './OIDCIcon.js';
-import WeChatIcon from './WeChatIcon';
 import { setUserData } from '../helpers/data.js';
-import LinuxDoIcon from './LinuxDoIcon.js';
 import { useTranslation } from 'react-i18next';
+import { VALIDATION_MESSAGES } from '../utils/authConstants';
+
+// Shared components and hooks
+import { useAuthForm } from '../hooks/useAuthForm';
+import { useTurnstile } from '../hooks/useTurnstile';
+import AuthFormLayout from './shared/AuthFormLayout';
+import ThirdPartyAuth from './shared/ThirdPartyAuth';
+import WeChatLoginModal from './shared/WeChatLoginModal';
+import TurnstileWrapper from './shared/TurnstileWrapper';
 
 const LoginForm = () => {
-  const [inputs, setInputs] = useState({
+  const { t } = useTranslation();
+  const [submitted, setSubmitted] = useState(false);
+
+  // Use shared hooks
+  const {
+    inputs,
+    handleChange,
+    status,
+    showWeChatLoginModal,
+    setShowWeChatLoginModal,
+    userDispatch,
+    navigate,
+    searchParams,
+    processAffCode,
+    onWeChatLoginClicked,
+    onSubmitWeChatVerificationCode,
+    onTelegramLoginClicked,
+  } = useAuthForm({
     username: '',
     password: '',
     wechat_verification_code: '',
   });
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [submitted, setSubmitted] = useState(false);
+
+  const {
+    turnstileEnabled,
+    turnstileSiteKey,
+    turnstileToken,
+    setTurnstileToken,
+    validateTurnstile,
+  } = useTurnstile();
+
   const { username, password } = inputs;
-  const [userState, userDispatch] = useContext(UserContext);
-  const [turnstileEnabled, setTurnstileEnabled] = useState(false);
-  const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState('');
-  let navigate = useNavigate();
-  const [status, setStatus] = useState({});
-  const [showWeChatLoginModal, setShowWeChatLoginModal] = useState(false);
-  const { t } = useTranslation();
 
-  const logo = getLogo();
-
-  // Conditionally handle AFF parameters based on aff_enabled status
-  let affCode = null;
-  let statusFromStorage = localStorage.getItem('status');
-  if (statusFromStorage) {
-    statusFromStorage = JSON.parse(statusFromStorage);
-    if (statusFromStorage.aff_enabled === true) {
-      affCode = new URLSearchParams(window.location.search).get('aff');
-      if (affCode) {
-        localStorage.setItem('aff', affCode);
-      }
-    }
-  }
-
+  // Process AFF code on component mount
   useEffect(() => {
-    if (searchParams.get('expired')) {
-      showError(t('未登录或登录已过期，请重新登录'));
-    }
-    let status = localStorage.getItem('status');
-    if (status) {
-      status = JSON.parse(status);
-      setStatus(status);
-      if (status.turnstile_check) {
-        setTurnstileEnabled(true);
-        setTurnstileSiteKey(status.turnstile_site_key);
-      }
-    }
+    processAffCode();
   }, []);
 
-  const onWeChatLoginClicked = () => {
-    setShowWeChatLoginModal(true);
-  };
+  // Check for expired session
+  useEffect(() => {
+    if (searchParams.get('expired')) {
+      showError(t(VALIDATION_MESSAGES.SESSION_EXPIRED));
+    }
+  }, [searchParams, t]);
 
-  const onSubmitWeChatVerificationCode = async () => {
-    if (turnstileEnabled && turnstileToken === '') {
-      showInfo('请稍后几秒重试，Turnstile 正在检查用户环境！');
+  const handleSubmit = async (e) => {
+    if (!validateTurnstile()) {
+      showInfo(VALIDATION_MESSAGES.TURNSTILE_WAIT);
       return;
     }
-    const res = await API.get(
-      `/api/oauth/wechat?code=${inputs.wechat_verification_code}`,
-    );
-    const { success, message, data } = res.data;
-    if (success) {
-      userDispatch({ type: 'login', payload: data });
-      localStorage.setItem('user', JSON.stringify(data));
-      setUserData(data);
-      updateAPI();
-      navigate(searchParams.get('returnTo') || '/');
-      showSuccess('登录成功！');
-      setShowWeChatLoginModal(false);
-    } else {
-      showError(message);
-    }
-  };
-
-  function handleChange(name, value) {
-    setInputs((inputs) => ({ ...inputs, [name]: value }));
-  }
-
-  async function handleSubmit(e) {
-    if (turnstileEnabled && turnstileToken === '') {
-      showInfo('请稍后几秒重试，Turnstile 正在检查用户环境！');
-      return;
-    }
+    
     setSubmitted(true);
     if (username && password) {
       const res = await API.post(
@@ -150,11 +99,11 @@ const LoginForm = () => {
         userDispatch({ type: 'login', payload: data });
         setUserData(data);
         updateAPI();
-        showSuccess('登录成功！');
+        showSuccess(VALIDATION_MESSAGES.LOGIN_SUCCESS);
         if (username === 'root' && password === '123456') {
           Modal.error({
-            title: '您正在使用默认密码！',
-            content: '请立刻修改默认密码！',
+            title: VALIDATION_MESSAGES.DEFAULT_PASSWORD_WARNING,
+            content: VALIDATION_MESSAGES.CHANGE_DEFAULT_PASSWORD,
             centered: true,
           });
         }
@@ -163,248 +112,82 @@ const LoginForm = () => {
         showError(message);
       }
     } else {
-      showError('请输入用户名和密码！');
-    }
-  }
-
-  // 添加Telegram登录处理函数
-  const onTelegramLoginClicked = async (response) => {
-    const fields = [
-      'id',
-      'first_name',
-      'last_name',
-      'username',
-      'photo_url',
-      'auth_date',
-      'hash',
-      'lang',
-    ];
-    const params = {};
-    fields.forEach((field) => {
-      if (response[field]) {
-        params[field] = response[field];
-      }
-    });
-    const res = await API.get(`/api/oauth/telegram/login`, { params });
-    const { success, message, data } = res.data;
-    if (success) {
-      userDispatch({ type: 'login', payload: data });
-      localStorage.setItem('user', JSON.stringify(data));
-      showSuccess('登录成功！');
-      setUserData(data);
-      updateAPI();
-      navigate(searchParams.get('returnTo') || '/');
-    } else {
-      showError(message);
+      showError(VALIDATION_MESSAGES.MISSING_CREDENTIALS);
     }
   };
 
-  return (
-    <div>
-      <Layout>
-        <Layout.Header></Layout.Header>
-        <Layout.Content>
-          <div
-            style={{
-              justifyContent: 'center',
-              display: 'flex',
-              marginTop: 120,
-            }}
-          >
-            <div style={{ width: 500 }}>
-              <Card>
-                <Title heading={2} style={{ textAlign: 'center' }}>
-                  {t('用户登录')}
-                </Title>
-                <Form>
-                  <Form.Input
-                    field={'username'}
-                    label={t('用户名/邮箱')}
-                    placeholder={t('用户名/邮箱')}
-                    name='username'
-                    onChange={(value) => handleChange('username', value)}
-                  />
-                  <Form.Input
-                    field={'password'}
-                    label={t('密码')}
-                    placeholder={t('密码')}
-                    name='password'
-                    type='password'
-                    onChange={(value) => handleChange('password', value)}
-                  />
+  const handleWeChatSubmit = () => {
+    onSubmitWeChatVerificationCode(turnstileToken);
+  };
 
-                  <Button
-                    theme='solid'
-                    style={{ width: '100%' }}
-                    type={'primary'}
-                    size='large'
-                    htmlType={'submit'}
-                    onClick={handleSubmit}
-                  >
-                    {t('登录')}
-                  </Button>
-                </Form>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    marginTop: 20,
-                  }}
-                >
-                  <Text>
-                    {t('没有账户？')}{' '}
-                    <Link to='/register'>{t('点击注册')}</Link>
-                  </Text>
-                  <Text>
-                    {t('忘记密码？')} <Link to='/reset'>{t('点击重置')}</Link>
-                  </Text>
-                </div>
-                {status.github_oauth ||
-                status.oidc_enabled ||
-                status.wechat_login ||
-                status.telegram_oauth ||
-                status.linuxdo_oauth ? (
-                  <>
-                    <Divider margin='12px' align='center'>
-                      {t('第三方登录')}
-                    </Divider>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        marginTop: 20,
-                      }}
-                    >
-                      {status.github_oauth ? (
-                        <Button
-                          type='primary'
-                          icon={<IconGithubLogo />}
-                          onClick={() =>
-                            onGitHubOAuthClicked(status.github_client_id)
-                          }
-                        />
-                      ) : (
-                        <></>
-                      )}
-                      {status.oidc_enabled ? (
-                        <Button
-                          type='primary'
-                          icon={<OIDCIcon />}
-                          onClick={() =>
-                            onOIDCClicked(
-                              status.oidc_authorization_endpoint,
-                              status.oidc_client_id,
-                            )
-                          }
-                        />
-                      ) : (
-                        <></>
-                      )}
-                      {status.linuxdo_oauth ? (
-                        <Button
-                          icon={<LinuxDoIcon />}
-                          onClick={() =>
-                            onLinuxDOOAuthClicked(status.linuxdo_client_id)
-                          }
-                        />
-                      ) : (
-                        <></>
-                      )}
-                      {status.wechat_login ? (
-                        <Button
-                          type='primary'
-                          style={{ color: 'rgba(var(--semi-green-5), 1)' }}
-                          icon={<Icon svg={<WeChatIcon />} />}
-                          onClick={onWeChatLoginClicked}
-                        />
-                      ) : (
-                        <></>
-                      )}
-                    </div>
-                    {status.telegram_oauth ? (
-                      <>
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            marginTop: 5,
-                          }}
-                        >
-                          <TelegramLoginButton
-                            dataOnauth={onTelegramLoginClicked}
-                            botName={status.telegram_bot_name}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <></>
-                    )}
-                  </>
-                ) : (
-                  <></>
-                )}
-                <Modal
-                  title={t('微信扫码登录')}
-                  visible={showWeChatLoginModal}
-                  maskClosable={true}
-                  onOk={onSubmitWeChatVerificationCode}
-                  onCancel={() => setShowWeChatLoginModal(false)}
-                  okText={t('登录')}
-                  size={'small'}
-                  centered={true}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItem: 'center',
-                      flexDirection: 'column',
-                    }}
-                  >
-                    <img src={status.wechat_qrcode} />
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <p>
-                      {t(
-                        '微信扫码关注公众号，输入「验证码」获取验证码（三分钟内有效）',
-                      )}
-                    </p>
-                  </div>
-                  <Form size='large'>
-                    <Form.Input
-                      field={'wechat_verification_code'}
-                      placeholder={t('验证码')}
-                      label={t('验证码')}
-                      value={inputs.wechat_verification_code}
-                      onChange={(value) =>
-                        handleChange('wechat_verification_code', value)
-                      }
-                    />
-                  </Form>
-                </Modal>
-              </Card>
-              {turnstileEnabled ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    marginTop: 20,
-                  }}
-                >
-                  <Turnstile
-                    sitekey={turnstileSiteKey}
-                    onVerify={(token) => {
-                      setTurnstileToken(token);
-                    }}
-                  />
-                </div>
-              ) : (
-                <></>
-              )}
-            </div>
-          </div>
-        </Layout.Content>
-      </Layout>
-    </div>
+  return (
+    <AuthFormLayout title={t('用户登录')}>
+      <Form>
+        <Form.Input
+          field={'username'}
+          label={t('用户名/邮箱')}
+          placeholder={t('用户名/邮箱')}
+          name='username'
+          onChange={(value) => handleChange('username', value)}
+        />
+        <Form.Input
+          field={'password'}
+          label={t('密码')}
+          placeholder={t('密码')}
+          name='password'
+          type='password'
+          onChange={(value) => handleChange('password', value)}
+        />
+
+        <Button
+          theme='solid'
+          style={{ width: '100%' }}
+          type={'primary'}
+          size='large'
+          htmlType={'submit'}
+          onClick={handleSubmit}
+        >
+          {t('登录')}
+        </Button>
+      </Form>
+      
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginTop: 20,
+        }}
+      >
+        <Text>
+          {t('没有账户？')}{' '}
+          <Link to='/register'>{t('点击注册')}</Link>
+        </Text>
+        <Text>
+          {t('忘记密码？')} <Link to='/reset'>{t('点击重置')}</Link>
+        </Text>
+      </div>
+
+      <ThirdPartyAuth
+        status={status}
+        onWeChatLoginClicked={onWeChatLoginClicked}
+        onTelegramLoginClicked={onTelegramLoginClicked}
+      />
+
+      <WeChatLoginModal
+        visible={showWeChatLoginModal}
+        onOk={handleWeChatSubmit}
+        onCancel={() => setShowWeChatLoginModal(false)}
+        status={status}
+        inputs={inputs}
+        handleChange={handleChange}
+      />
+
+      <TurnstileWrapper
+        enabled={turnstileEnabled}
+        siteKey={turnstileSiteKey}
+        onVerify={setTurnstileToken}
+      />
+    </AuthFormLayout>
   );
 };
 
