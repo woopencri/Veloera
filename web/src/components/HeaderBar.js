@@ -178,7 +178,7 @@ const HeaderBar = () => {
         ]
       : []),
     {
-      text: t('使用说明'),
+      text: t('使用指南'),
       itemKey: 'about',
       to: '/about',
       icon: <IconInfoCircle style={headerIconStyle} />,
