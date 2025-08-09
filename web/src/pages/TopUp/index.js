@@ -365,19 +365,11 @@ const TopUp = () => {
                       type="primary"
                       theme="solid"
                       onClick={() => preTopUp('zfb')}
+                      style={{ width: '100%' }}
                     >
                       {t('支付宝')}
                     </Button>
-                    <Button
-                      style={{
-                        backgroundColor: 'rgba(var(--semi-green-5), 1)',
-                      }}
-                      type="primary"
-                      theme="solid"
-                      onClick={() => preTopUp('wx')}
-                    >
-                      {t('微信')}
-                    </Button>
+                    
                   </Space>
                 </Form>
               ) : (
