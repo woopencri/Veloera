@@ -595,58 +595,6 @@ const EditChannel = (props) => {
     setLoading(false);
   };
 
-  const fetchUpstreamModelList = async (name) => {
-    // if (inputs['type'] !== 1) {
-    //   showError(t('仅支持 OpenAI 接口格式'));
-    //   return;
-    // }
-    setLoading(true);
-    const models = inputs.models || [];
-    let err = false;
-    let fetchedModels = [];
-
-    if (isEdit) {
-      // 如果是编辑模式，使用已有的channel id获取模型列表
-      const res = await API.get('/api/channel/fetch_models/' + channelId);
-      if (res.data && res.data?.success) {
-        fetchedModels = Array.isArray(res.data.data) ? res.data.data : (res.data.data?.data || []);
-      } else {
-        err = true;
-      }
-    } else {
-      // 如果是新建模式，通过后端代理获取模型列表
-      if (!inputs?.key) {
-        showError(t('请填写密钥'));
-        err = true;
-      } else {
-        try {
-          const res = await API.post('/api/channel/fetch_models', {
-            base_url: inputs.base_url,
-            type: inputs.type,
-            key: inputs.key.split(',')[0].trim(),
-          });
-
-          if (res.data && res.data.success) {
-             fetchedModels = Array.isArray(res.data.data) ? res.data.data : (res.data.data?.data || []);
-          } else {
-            err = true;
-          }
-        } catch (error) {
-          console.error('Error fetching models:', error);
-          err = true;
-        }
-      }
-    }
-
-    if (!err) {
-       const combinedModels = Array.from(new Set([...models, ...fetchedModels]));
-      handleInputChange(name, combinedModels);
-      showSuccess(t('获取模型列表成功'));
-    } else {
-      showError(t('获取模型列表失败'));
-    }
-    setLoading(false);
-  };
 
   const fetchModels = async () => {
     try {
@@ -1527,20 +1475,6 @@ const EditChannel = (props) => {
               >
                 {t('填入所有模型')}
               </Button>
-              <Tooltip
-                content={t(
-                  '新建渠道时，请求通过当前浏览器发出；编辑已有渠道，请求通过后端服务器发出',
-                )}
-              >
-                <Button
-                  type='tertiary'
-                  onClick={() => {
-                    fetchUpstreamModelList('models');
-                  }}
-                >
-                  {t('获取模型列表')}
-                </Button>
-              </Tooltip>
               <Button
                 style={{ marginLeft: 8 }}
                 type='tertiary'
@@ -1571,7 +1505,7 @@ const EditChannel = (props) => {
                   });
                 }}
               >
-                {t('高级')}
+                {t('模型选择')}
               </Button>
               <Button
                 type='warning'
@@ -1579,7 +1513,24 @@ const EditChannel = (props) => {
                   handleInputChange('models', []);
                 }}
               >
-                {t('清除所有模型')}
+                {t('清除所有')}
+              </Button>
+              <Button
+                type='tertiary'
+                onClick={() => {
+                  if (inputs.models && inputs.models.length > 0) {
+                    const modelsText = inputs.models.join(',');
+                    navigator.clipboard.writeText(modelsText).then(() => {
+                      showSuccess(t('已复制到剪贴板'));
+                    }).catch(() => {
+                      showError(t('复制失败'));
+                    });
+                  } else {
+                    showWarning(t('没有模型可复制'));
+                  }
+                }}
+              >
+                {t('复制所有')}
               </Button>
             </Space>
             <Input
