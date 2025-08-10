@@ -151,7 +151,7 @@ const Home = () => {
                       target='_blank'
                       rel='noreferrer'
                     >
-                      Apache-2.0 License
+                      GNU GPL v3-or-later
                     </a>
                   </p>
                   <p>
