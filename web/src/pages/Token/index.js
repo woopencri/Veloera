@@ -20,8 +20,11 @@ import React from 'react';
 import TokensTable from '../../components/TokensTable';
 import { Banner, Layout } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
+import { useContext } from 'react';
+import { StatusContext } from '../../context/Status';
 const Token = () => {
   const { t } = useTranslation();
+  const [statusState, statusDispatch] = useContext(StatusContext);
   return (
     <>
       <Layout>
@@ -32,6 +35,17 @@ const Token = () => {
               '令牌无法精确控制使用额度，只允许自用，请勿直接将令牌分发给他人。',
             )}
           />
+          {/* Warning banner for chat content logging */}
+          {statusState?.status?.log_chat_content_enabled && (
+            <Banner
+              type='warning'
+              description='此站点管理员可查看您的对话内容'
+              style={{
+                margin: '0 0 16px 0',
+                borderRadius: '6px',
+              }}
+            />
+          )}
         </Layout.Header>
         <Layout.Content>
           <TokensTable />
