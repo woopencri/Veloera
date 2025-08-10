@@ -100,6 +100,7 @@ export default function SettingGlobalModel(props) {
           values={inputs}
           getFormApi={(formAPI) => (refForm.current = formAPI)}
           style={{ marginBottom: 15 }}
+          onValueChange={(values) => setInputs({ ...inputs, ...values })}
         >
           <Form.Section text={t('全局设置')}>
             <Row>
@@ -219,12 +220,6 @@ export default function SettingGlobalModel(props) {
                   <Form.Switch
                     label={t('开启自动重试')}
                     field={'global.auto_retry_enabled'}
-                    onChange={(value) =>
-                      setInputs({
-                        ...inputs,
-                        'global.auto_retry_enabled': value,
-                      })
-                    }
                     extraText={'开启后，当空回复或上游报错时自动重试'}
                   />
                 </Col>
@@ -232,12 +227,6 @@ export default function SettingGlobalModel(props) {
                   <Form.InputNumber
                     label={t('重试次数')}
                     field={'global.auto_retry_count'}
-                    onChange={(value) =>
-                      setInputs({
-                        ...inputs,
-                        'global.auto_retry_count': value,
-                      })
-                    }
                     min={1}
                     max={10}
                     disabled={!inputs['global.auto_retry_enabled']}
@@ -247,12 +236,6 @@ export default function SettingGlobalModel(props) {
                   <Form.Switch
                     label={t('强制更换渠道')}
                     field={'global.auto_retry_force_channel_switch'}
-                    onChange={(value) =>
-                      setInputs({
-                        ...inputs,
-                        'global.auto_retry_force_channel_switch': value,
-                      })
-                    }
                     extraText={'重试时强制切换到不同的渠道'}
                     disabled={!inputs['global.auto_retry_enabled']}
                   />
@@ -263,12 +246,6 @@ export default function SettingGlobalModel(props) {
                   <Form.Input
                     label={t('重试状态码')}
                     field={'global.auto_retry_status_codes'}
-                    onChange={(value) =>
-                      setInputs({
-                        ...inputs,
-                        'global.auto_retry_status_codes': value,
-                      })
-                    }
                     placeholder='5xx,4xx'
                     extraText={'不填默认所有状态码，可使用 x，使用英文逗号分割'}
                     disabled={!inputs['global.auto_retry_enabled']}
