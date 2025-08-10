@@ -122,8 +122,7 @@ func RequestEpay(c *gin.Context) {
 		payType = "wxpay"
 	}
 	callBackAddress := service.GetCallbackAddress()
-	returnUrl, _ := url.Parse(setting.ServerAddress + "/app/logs/api-usage")
-	// TODO: 增加充值成功页面
+	returnUrl, _ := url.Parse(setting.ServerAddress + "/app/wallet/topup-success")
 	notifyUrl, _ := url.Parse(callBackAddress + "/api/user/epay/notify")
 	tradeNo := fmt.Sprintf("%s%d", common.GetRandomString(6), time.Now().Unix())
 	tradeNo = fmt.Sprintf("USR%dNO%s", id, tradeNo)
