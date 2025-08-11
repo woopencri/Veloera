@@ -252,6 +252,24 @@ func Distribute() func(c *gin.Context) {
 			}
 		}
 
+		// Apply global virtual model mapping
+		originalVirtualModel := modelRequest.Model
+		actualModel, err := service.GetActualModel(modelRequest.Model)
+		if err != nil {
+			common.LogError(c, fmt.Sprintf("Failed to get actual model for %s: %s", modelRequest.Model, err.Error()))
+			abortWithOpenAiMessage(c, http.StatusInternalServerError, "Virtual model mapping error")
+			return
+		}
+		if actualModel != modelRequest.Model {
+			// Virtual model mapping was applied
+			common.SysLog(fmt.Sprintf("Model Mapping: Virtual Model=%s -> Actual model=%s", modelRequest.Model, actualModel))
+			modelRequest.Model = actualModel
+			// Set context values for logging
+			c.Set("virtual_model_mapped", true)
+			c.Set("virtual_model_original", originalVirtualModel)
+			c.Set("virtual_model_actual", actualModel)
+		}
+
 		if ok {
 			id, err := strconv.Atoi(channelId.(string))
 			if err != nil {

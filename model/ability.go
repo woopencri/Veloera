@@ -110,18 +110,32 @@ func getChannelQuery(group string, model string, retry int) *gorm.DB {
 }
 
 func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel, error) {
+	// 调用全局模型映射服务，将虚拟模型名转换为实际模型名
+	actualModel, err := GetActualModel(model)
+	if err != nil {
+		common.SysError(fmt.Sprintf("Model mapping failed: Virtual Model=%s, Error=%s", model, err.Error()))
+		return nil, fmt.Errorf("Model mapping failed: %w", err)
+	}
+
+	// 记录模型映射日志
+	if actualModel != model {
+		common.SysLog(fmt.Sprintf("Model Mapping: Virtual Model=%s -> Actual model=%s", model, actualModel))
+	}
+
 	var abilities []Ability
 
-	var err error = nil
-	channelQuery := getChannelQuery(group, model, retry)
+	var dbErr error = nil
+	channelQuery := getChannelQuery(group, actualModel, retry)
 	if common.UsingSQLite || common.UsingPostgreSQL {
-		err = channelQuery.Order("weight DESC").Find(&abilities).Error
+		dbErr = channelQuery.Order("weight DESC").Find(&abilities).Error
 	} else {
-		err = channelQuery.Order("weight DESC").Find(&abilities).Error
+		dbErr = channelQuery.Order("weight DESC").Find(&abilities).Error
 	}
-	if err != nil {
-		return nil, err
+	if dbErr != nil {
+		common.SysError(fmt.Sprintf("查询渠道能力失败: group=%s, model=%s, 错误=%s", group, actualModel, dbErr.Error()))
+		return nil, dbErr
 	}
+
 	channel := Channel{}
 	if len(abilities) > 0 {
 		// Randomly choose one
@@ -140,10 +154,17 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 			}
 		}
 	} else {
-		return nil, errors.New("channel not found")
+		common.SysError(fmt.Sprintf("没有找到可用渠道: group=%s, model=%s", group, actualModel))
+		return nil, errors.New("no channels available")
 	}
-	err = DB.First(&channel, "id = ?", channel.Id).Error
-	return &channel, err
+
+	dbErr = DB.First(&channel, "id = ?", channel.Id).Error
+	if dbErr != nil {
+		common.SysError(fmt.Sprintf("查询渠道信息失败: channel_id=%d, 错误=%s", channel.Id, dbErr.Error()))
+		return nil, dbErr
+	}
+
+	return &channel, dbErr
 }
 
 func (channel *Channel) AddAbilities() error {
