@@ -96,6 +96,11 @@ func main() {
 	// Initialize options
 	model.InitOptionMap()
 
+	// Initialize global model mapping service
+	if err := service.InitializeModelMappingService(); err != nil {
+		common.SysError("failed to initialize model mapping service: " + err.Error())
+	}
+
 	if common.RedisEnabled {
 		// for compatibility with old versions
 		common.MemoryCacheEnabled = true

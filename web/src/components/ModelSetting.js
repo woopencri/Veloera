@@ -21,9 +21,10 @@ import { Card, Spin, Tabs } from '@douyinfe/semi-ui';
 
 import { API, showError, showSuccess } from '../helpers';
 import { useTranslation } from 'react-i18next';
-import SettingGeminiModel from '../pages/Setting/Model/SettingGeminiModel.js';
-import SettingClaudeModel from '../pages/Setting/Model/SettingClaudeModel.js';
-import SettingGlobalModel from '../pages/Setting/Model/SettingGlobalModel.js';
+import SettingGeminiModel from '../pages/Setting/Model/SettingGeminiModel';
+import SettingClaudeModel from '../pages/Setting/Model/SettingClaudeModel';
+import SettingGlobalModel from '../pages/Setting/Model/SettingGlobalModel';
+import SettingModelMapping from '../pages/Setting/Model/SettingModelMapping';
 
 const ModelSetting = () => {
   const { t } = useTranslation();
@@ -109,6 +110,10 @@ const ModelSetting = () => {
         {/* Claude */}
         <Card style={{ marginTop: '10px' }}>
           <SettingClaudeModel options={inputs} refresh={onRefresh} />
+        </Card>
+        {/* Model Mapping */}
+        <Card style={{ marginTop: '10px' }}>
+          <SettingModelMapping />
         </Card>
       </Spin>
     </>

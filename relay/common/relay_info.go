@@ -173,10 +173,26 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 	prefixedModel := c.GetString("prefixed_model")
 	originalModel := c.GetString("original_model")
 
+	// Check for virtual model mapping
+	virtualModelMapped := c.GetBool("virtual_model_mapped")
+	virtualModelOriginal := c.GetString("virtual_model_original")
+	virtualModelActual := c.GetString("virtual_model_actual")
+
 	// If we have a prefixed model, use it as the origin model name for display
 	// but use the unprefixed model name for the upstream
 	if prefixedModel != "" {
 		originalModel = prefixedModel
+	}
+
+	// Handle virtual model mapping for display and upstream names
+	upstreamModelName := originalModel
+	isVirtualModelMapped := false
+	
+	if virtualModelMapped && virtualModelOriginal != "" && virtualModelActual != "" {
+		// Virtual model mapping occurred
+		originalModel = virtualModelOriginal  // Display the original virtual model name
+		upstreamModelName = virtualModelActual // Use the actual mapped model
+		isVirtualModelMapped = true
 	}
 
 	info := &RelayInfo{
@@ -196,10 +212,10 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 		TokenUnlimited:    tokenUnlimited,
 		StartTime:         startTime,
 		FirstResponseTime: startTime.Add(-time.Second),
-		OriginModelName:   originalModel,                 // Use the prefixed model name for display
-		UpstreamModelName: c.GetString("original_model"), // Use the unprefixed model name for upstream
+		OriginModelName:   originalModel,                 // Use the virtual model name or prefixed model for display
+		UpstreamModelName: upstreamModelName,            // Use the actual model name for upstream
 		//RecodeModelName:   c.GetString("original_model"),
-		IsModelMapped:     false,
+		IsModelMapped:     isVirtualModelMapped,         // Mark if virtual model mapping occurred
 		ApiType:           apiType,
 		ApiVersion:        c.GetString("api_version"),
 		ApiKey:            strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),

@@ -172,6 +172,17 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			groupRoute.GET("/", controller.GetGroups)
 		}
+		
+		// Model mapping routes
+		modelMappingRoute := apiRouter.Group("/model_mapping")
+		modelMappingRoute.Use(middleware.AdminAuth())
+		{
+			modelMappingRoute.GET("/", controller.GetGlobalModelMapping)
+			modelMappingRoute.PUT("/", controller.UpdateGlobalModelMapping)
+			modelMappingRoute.GET("/config", controller.GetModelMappingConfig)
+			modelMappingRoute.PUT("/config", controller.UpdateModelMappingConfig)
+			modelMappingRoute.POST("/reload", controller.ReloadModelMapping)
+		}
 		mjRoute := apiRouter.Group("/mj")
 		mjRoute.GET("/self", middleware.UserAuth(), controller.GetUserMidjourney)
 		mjRoute.GET("/", middleware.AdminAuth(), controller.GetAllMidjourney)

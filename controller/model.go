@@ -334,6 +334,37 @@ func ListModels(c *gin.Context) {
 			}
 		}
 	}
+	
+	// 添加虚拟模型到返回列表中
+	virtualModels := model.GetAllVirtualModels()
+	for _, virtualModel := range virtualModels {
+		// 检查是否已经存在该虚拟模型，避免重复添加
+		exists := false
+		for _, existingModel := range userOpenAiModels {
+			if existingModel.Id == virtualModel {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			// 检查是否有对应的实际模型信息，如果有则使用
+			if modelData, ok := openAIModelsMap[virtualModel]; ok {
+				userOpenAiModels = append(userOpenAiModels, modelData)
+			} else {
+				// 创建虚拟模型的 OpenAI 格式信息
+				userOpenAiModels = append(userOpenAiModels, dto.OpenAIModels{
+					Id:         virtualModel,
+					Object:     "model",
+					Created:    1626777600,
+					OwnedBy:    "virtual",
+					Permission: permission,
+					Root:       virtualModel,
+					Parent:     nil,
+				})
+			}
+		}
+	}
 
 	c.JSON(200, gin.H{
 		"success": true,

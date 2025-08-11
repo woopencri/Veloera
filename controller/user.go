@@ -587,6 +587,15 @@ func GetUserModels(c *gin.Context) {
 		}
 	}
 
+	// 添加虚拟模型到返回列表中
+	virtualModels := model.GetAllVirtualModels()
+	for _, virtualModel := range virtualModels {
+		if !addedModels[virtualModel] {
+			models = append(models, virtualModel)
+			addedModels[virtualModel] = true
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
