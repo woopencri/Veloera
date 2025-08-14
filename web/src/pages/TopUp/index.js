@@ -347,10 +347,9 @@ const TopUp = () => {
                   <Form.Input
                     disabled={!enableOnlineTopUp}
                     field="redemptionCount"
-                    label={t('实付金额：') + ' ' + renderAmountText()}
+                    label={t('实付金额：') + ' ' + renderAmountText() + t(' 充值比例为1 : 1')}
                     placeholder={
-                      t('充值数量，最低 ') +
-                      renderQuotaWithAmount(minTopUp)
+                      t('充值数量，最低 ') + minTopUp + t(' 元')
                     }
                     type="number"
                     value={topUpCount}
