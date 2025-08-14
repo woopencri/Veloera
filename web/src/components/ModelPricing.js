@@ -268,11 +268,11 @@ const ModelPricing = () => {
           content = (
             <>
               <Text>
-                {t('提示')} ${inputRatioPrice} / 1M tokens
+                {t('提示')} ¥{inputRatioPrice} / 1M tokens
               </Text>
               <br />
               <Text>
-                {t('补全')} ${completionRatioPrice} / 1M tokens
+                {t('补全')} ¥{completionRatioPrice} / 1M tokens
               </Text>
             </>
           );
@@ -387,7 +387,7 @@ const ModelPricing = () => {
           description={
             <div>
               {t(
-                '按量计费费用 = 分组倍率 × 模型倍率 × （提示token数 + 补全token数 × 补全倍率）/ 500000 （单位：美元）',
+                '按量计费费用 = 分组倍率 × 模型倍率 × （提示token数 + 补全token数 × 补全倍率）/ 500000 （单位：RMB）',
               )}
             </div>
           }
