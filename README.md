@@ -1,3 +1,13 @@
+自用修改
+修改文件：
+1.web/src/pages/TopUp/index.js         钱包界面删除微信二维码
+2.web/src/components/ModelPricing.js   定价界面单位改为rmb
+3.web/public/favicon.ico               默认logo
+4.web/public/logo.png                  默认logo
+5.web/index.html                       默认网页标题
+
+
+
 ![Veloera](https://socialify.git.ci/Veloera/Veloera/image?font=Raleway&forks=1&issues=1&name=1&owner=1&pattern=Plus&pulls=1&stargazers=1&theme=Auto)
 
 # Veloera
